@@ -43,10 +43,10 @@ def discover_new_targets(known_domains):
     print("🚀 Launching SMART HUNT (Target: 5 Credits/run)...")
     search_url = "https://google.serper.dev/search"
     
-    # ADVANCED GOOGLE DORKS: Forcing exact file types and combining queries with '|'
+    # ADVANCED GOOGLE DORKS: Loosened 'allinurl' to 'inurl' for better API compatibility
     queries = [
-        'allinurl:"/.well-known/agent-card.json"',
-        'allinurl:"/.well-known/ai-plugin.json"',
+        'inurl:"/.well-known/agent-card.json"',
+        'inurl:"/.well-known/ai-plugin.json"',
         'filetype:txt inurl:"llms.txt" "agent" | "llm" | "ai"',
         'filetype:json "mcpServers" | "mcp-server"',
         'filetype:json "agent_card" | "name_for_model" | "x-agent-api"'
@@ -64,7 +64,7 @@ def discover_new_targets(known_domains):
                 "q": q, 
                 "page": page,
                 "num": 100, 
-                "tbs": "qdr:m",
+                # REMOVED the 30-day limit. Our 'known_domains' memory will filter old stuff!
                 "autocorrect": False,
                 "filter": 0
             }) 
@@ -76,6 +76,7 @@ def discover_new_targets(known_domains):
                 
                 # If Google runs out of results entirely, stop turning pages
                 if 'organic' not in results:
+                    print(f"     Page {page}: No organic results found (End of Google's index).")
                     break 
                     
                 found_count = len(results.get('organic', []))
