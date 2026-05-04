@@ -66,48 +66,57 @@ def fetch_agent_data(base_url):
     
     try:
         # Door 1 (A2A Protocol)
-        res1 = requests.get(door_1, timeout=5)
+        res1 = requests.get(door_1, timeout=10)
         if res1.status_code == 200:
             found_data = res1.json()
             found_data = found_data.get("agent_card", found_data) if isinstance(found_data, dict) else {}
             print("  🚪 Found A2A agent-card.json!")
             
         # Door 2 (LLMs index)
-        elif requests.get(door_2, timeout=5).status_code == 200:
-            print("  📚 Found an llms.txt index!")
-            found_data = {
-                "name": f"Agent Node at {base_url.replace('https://', '')}",
-                "description": "An AI-friendly site supporting llms.txt protocol.",
-                "skills": ["llms-txt"]
-            }
         else:
-            print("  ⏭️  No agent files found.")
+            res2 = requests.get(door_2, timeout=10)
+            if res2.status_code == 200:
+                print("  📚 Found an llms.txt index!")
+                found_data = {
+                    "name": f"Agent Node at {base_url.replace('https://', '')}",
+                    "description": "An AI-friendly site supporting llms.txt protocol.",
+                    "skills": ["llms-txt"]
+                }
+            else:
+                print("  ⏭️  No agent files found.")
 
-        # Save to Supabase (Supabase naturally ignores duplicates, serving as our memory!)
-        if found_data and SUPABASE_URL and SUPABASE_KEY:
-            clean_domain = base_url.replace("https://", "").replace("http://", "").rstrip('/')
-            
-            db_payload = {
-                "domain": clean_domain,
-                "name": found_data.get("name", "Unknown Node"),
-                "description": found_data.get("description", ""),
-                "tags": [str(s) for s in found_data.get("skills", [])] if isinstance(found_data.get("skills"), list) else [],
-                "raw_card": found_data
-            }
-            
-            api_url = f"{SUPABASE_URL}/rest/v1/agents"
-            headers = {
-                "apikey": SUPABASE_KEY,
-                "Authorization": f"Bearer {SUPABASE_KEY}",
-                "Content-Type": "application/json",
-                "Prefer": "resolution=merge-duplicates"
-            }
-            
-            requests.post(api_url, headers=headers, json=db_payload)
-            print(f"  ✨ SUCCESSFULLY ADDED TO DB!")
-            
     except Exception as e:
-        print(f"  ❌ Failed to connect.")
+        print(f"  ⚠️ Crawl error (site blocked us): {e}")
+        return # Stop here if we can't crawl the site
+        
+    # Save to Supabase (Separated so we can see Database errors!)
+    if found_data and SUPABASE_URL and SUPABASE_KEY:
+        clean_domain = base_url.replace("https://", "").replace("http://", "").rstrip('/')
+        
+        db_payload = {
+            "domain": clean_domain,
+            "name": found_data.get("name", "Unknown Node"),
+            "description": found_data.get("description", ""),
+            "tags": [str(s) for s in found_data.get("skills", [])] if isinstance(found_data.get("skills"), list) else [],
+            "raw_card": found_data
+        }
+        
+        api_url = f"{SUPABASE_URL}/rest/v1/agents"
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates"
+        }
+        
+        try:
+            db_res = requests.post(api_url, headers=headers, json=db_payload)
+            if db_res.status_code in [200, 201, 204]:
+                print(f"  ✨ SUCCESSFULLY ADDED TO DB!")
+            else:
+                print(f"  ❌ Supabase rejected it. Status: {db_res.status_code}, Error: {db_res.text}")
+        except Exception as e:
+            print(f"  ❌ Database connection error: {e}")
 
 if __name__ == "__main__":
     print("🚀 Starting Smart Hunter V3...\n")
