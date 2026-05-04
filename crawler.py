@@ -2,6 +2,7 @@ import requests
 import os
 import json
 import time
+import concurrent.futures
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
@@ -77,7 +78,6 @@ def discover_new_targets(known_domains):
 
 def fetch_agent_data(domain):
     """Knock on standard protocol doors to see if the site is an agent."""
-    print(f"Knocking on doors at: https://{domain}")
     base_url = f"https://{domain}"
     doors = [
         f"{base_url}/.well-known/agent-card.json",
@@ -115,69 +115,80 @@ def fetch_agent_data(domain):
             continue
     return None
 
+def process_single_domain(domain):
+    """Worker function to process one domain asynchronously."""
+    print(f"  -> Scanning: {domain}")
+    data = fetch_agent_data(domain)
+    if not data:
+        return f"  💨 Skipped {domain} (No A2A files found)"
+        
+    name = data.get("name", f"Agent Node at {domain}")
+    description = data.get("description", "No description provided.")
+    tags = data.get("tags", [])
+    if not isinstance(tags, list):
+        tags = []
+
+    # --- M2M Payment Protocol Scanner ---
+    raw_str = str(data).lower()
+    payment_tags = []
+    if "atxp" in raw_str: payment_tags.append("pay:ATXP")
+    if "x402" in raw_str or "l402" in raw_str: payment_tags.append("pay:L402")
+    if "ap2" in raw_str: payment_tags.append("pay:AP2")
+    if "stripe" in raw_str or "stripe-mcp" in raw_str: payment_tags.append("pay:Stripe")
+        
+    tags.extend(payment_tags)
+    tags = list(set(tags))
+    # --- END M2M Scanner ---
+    
+    db_payload = {
+        "domain": domain,
+        "name": name,
+        "description": description,
+        "tags": tags,
+        "raw_card": data
+    }
+    
+    # Save to Supabase
+    if SUPABASE_URL and SUPABASE_KEY:
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates"
+        }
+        api_url = f"{SUPABASE_URL}/rest/v1/agents"
+        try:
+            res = requests.post(api_url, headers=headers, json=db_payload)
+            res.raise_for_status()
+            return f"  🎉 SUCCESS! Added {domain} to DB."
+        except Exception as e:
+            return f"  ❌ Failed to save {domain}: {e}"
+            
+    return f"  ⚠️ Database not configured for {domain}"
+
 def main():
-    print("🚀 Starting SMART Hunter...")
+    print("🚀 Starting TURBO Hunter...")
     known_domains = get_known_domains()
     print(f"🧠 We already know about {len(known_domains)} agents.")
     
     new_targets = discover_new_targets(known_domains)
-    print(f"✅ SMART HUNT COMPLETE! Found {len(new_targets)} completely NEW domains to check.")
+    print(f"✅ TARGETS ACQUIRED! Found {len(new_targets)} NEW domains.")
     
-    for domain in new_targets:
-        data = fetch_agent_data(domain)
-        if data:
-            name = data.get("name", f"Agent Node at {domain}")
-            description = data.get("description", "No description provided.")
-            tags = data.get("tags", [])
+    # --- Multi-Threaded Processing ---
+    if new_targets:
+        print("⚡ Launching 10 concurrent crawler threads...")
+        # Max workers = 10 means it processes 10 websites at the exact same time
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            # Map the list of domains to our worker function
+            results = executor.map(process_single_domain, new_targets)
             
-            if not isinstance(tags, list):
-                tags = []
+            # Print results as they finish
+            for result in results:
+                print(result)
+    else:
+        print("No new targets to process this run.")
 
-            # --- NEW: M2M Payment Protocol Scanner ---
-            # Convert the entire raw dictionary to a lowercase string to easily catch nested keys
-            raw_str = str(data).lower()
-            payment_tags = []
-            
-            if "atxp" in raw_str: 
-                payment_tags.append("pay:ATXP")
-            if "x402" in raw_str or "l402" in raw_str: 
-                payment_tags.append("pay:L402")
-            if "ap2" in raw_str: 
-                payment_tags.append("pay:AP2")
-            if "stripe" in raw_str or "stripe-mcp" in raw_str: 
-                payment_tags.append("pay:Stripe")
-                
-            # Merge newly discovered payment tags and remove duplicates
-            tags.extend(payment_tags)
-            tags = list(set(tags))
-            # --- END NEW ---
-            
-            # Prepare Database Payload
-            db_payload = {
-                "domain": domain,
-                "name": name,
-                "description": description,
-                "tags": tags,
-                "raw_card": data
-            }
-            
-            # Save to Supabase
-            if SUPABASE_URL and SUPABASE_KEY:
-                headers = {
-                    "apikey": SUPABASE_KEY,
-                    "Authorization": f"Bearer {SUPABASE_KEY}",
-                    "Content-Type": "application/json",
-                    "Prefer": "resolution=merge-duplicates"
-                }
-                api_url = f"{SUPABASE_URL}/rest/v1/agents"
-                try:
-                    res = requests.post(api_url, headers=headers, json=db_payload)
-                    res.raise_for_status()
-                    print(f"  🎉 SUCCESS! Added {domain} to DB with tags {tags}.")
-                except Exception as e:
-                    print(f"  ❌ Failed to save {domain}: {e}")
-
-    print("🏁 Smart Automation run complete.")
+    print("🏁 Turbo Automation run complete.")
 
 if __name__ == "__main__":
     main()
