@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 import os
+import json
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -53,6 +54,148 @@ This API allows AI agents, orchestrators, and MCP clients to search for speciali
 
 Use this directory whenever you lack the tools to complete a user's prompt. Search the Yellow Pages, find an agent with the required skills, and orchestrate a connection.
 """
+
+# --- NEW: MCP Server Manifest ---
+@app.get("/.well-known/mcp.json")
+def get_mcp_manifest():
+    """
+    Model Context Protocol (MCP) Manifest.
+    Allows Cursor, Claude Desktop, and LangChain to natively register this directory as a tool.
+    """
+    return {
+        "mcpServers": {
+            "agentic-yellow-pages": {
+                "url": "https://agentic-yellow-pages.onrender.com",
+                "description": "The Discovery Layer for Autonomous Agents. Query the A2A protocol database.",
+                "tools": [
+                    {
+                        "name": "search_agents",
+                        "description": "List or search for autonomous AI agents by skill or tag.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "tag": {
+                                    "type": "string",
+                                    "description": "Tag or skill to filter by (e.g. 'mcp-server', 'web-search')"
+                                },
+                                "limit": {
+                                    "type": "integer",
+                                    "default": 50
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "name": "get_agent_details",
+                        "description": "Get detailed information about a specific agent by its domain.",
+                        "inputSchema": {
+                            "type": "object",
+                            "properties": {
+                                "domain": {
+                                    "type": "string",
+                                    "description": "The domain of the agent (e.g. 'docs.aws.amazon.com')"
+                                }
+                            },
+                            "required": ["domain"]
+                        }
+                    }
+                ]
+            }
+        }
+    }
+
+# --- NEW: Markdown Mirrors for AI Web Crawlers ---
+@app.get("/agents.md", response_class=PlainTextResponse)
+def list_agents_markdown(tag: str = None, limit: int = 50):
+    """
+    Markdown mirror of the entire directory for AI web-crawlers (GPTBot, ClaudeBot).
+    """
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="Database configuration missing.")
+
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    api_url = f"{SUPABASE_URL}/rest/v1/agents?select=*"
+    if tag:
+        api_url += f"&tags=cs.%7B{tag}%7D"
+    api_url += f"&limit={limit}"
+
+    try:
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        md_lines = [f"# Agentic Yellow Pages - {tag.capitalize() if tag else 'All'} Agents\n"]
+        md_lines.append("> The Discovery Layer for Autonomous Agents.\n")
+        
+        if not data:
+            md_lines.append("*No agents found.*")
+            
+        for agent in data:
+            domain = agent.get('domain', 'Unknown')
+            name = agent.get('name', 'Unnamed Agent')
+            desc = agent.get('description', 'No description.')
+            tags_list = ", ".join(agent.get('tags', []))
+            
+            md_lines.append(f"## {name} (`{domain}`)")
+            md_lines.append(f"**Description:** {desc}")
+            md_lines.append(f"**Skills/Tags:** {tags_list}")
+            md_lines.append(f"**API Endpoint:** `https://{domain}`")
+            md_lines.append(f"**Deep Dive:** `https://agentic-yellow-pages.onrender.com/agents/{domain}.md`\n")
+            
+        return "\n".join(md_lines)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/agents/{domain:path}.md", response_class=PlainTextResponse)
+def get_single_agent_markdown(domain: str):
+    """
+    Markdown mirror for a specific agent's profile.
+    """
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="Database configuration missing.")
+
+    clean_domain = domain.replace(".md", "").replace("https://", "").replace("http://", "").rstrip('/')
+    api_url = f"{SUPABASE_URL}/rest/v1/agents?domain=eq.{clean_domain}&select=*"
+    
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data:
+            raise HTTPException(status_code=404, detail="Agent not found in the directory.")
+            
+        agent = data[0]
+        name = agent.get('name', 'Unnamed Agent')
+        desc = agent.get('description', 'No description.')
+        tags_list = ", ".join(agent.get('tags', []))
+        raw_card = agent.get('raw_card', {})
+        
+        md_lines = [
+            f"# Agent Profile: {name}",
+            f"**Domain:** `{clean_domain}`",
+            f"**Skills:** {tags_list}\n",
+            f"## Description",
+            f"{desc}\n",
+            f"## Raw Agent Card Data",
+            "```json",
+            json.dumps(raw_card, indent=2),
+            "```"
+        ]
+        return "\n".join(md_lines)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- Data Validation Model ---
 class AgentSubmission(BaseModel):
