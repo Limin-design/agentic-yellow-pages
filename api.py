@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 import os
 from dotenv import load_dotenv
@@ -15,6 +16,15 @@ app = FastAPI(
     title="Agentic Yellow Pages API",
     description="A2A Discovery Directory for machine-to-machine orchestration.",
     version="1.0.0"
+)
+
+# --- NEW: Enable CORS for Frontend Access ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows any frontend to fetch data. (You can restrict this to your Hostinger domain later).
+    allow_credentials=True,
+    allow_methods=["*"], # Allows GET, POST, etc.
+    allow_headers=["*"],
 )
 
 @app.get("/")
