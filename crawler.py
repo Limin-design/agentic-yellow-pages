@@ -40,17 +40,17 @@ def discover_new_targets(known_domains):
         print("❌ Missing SERPER_API_KEY!")
         return []
 
-    print("🚀 Launching SMART HUNT (Target: 5 Credits/run)...")
+    print("🚀 Launching WIDE HUNT (Target: 10 Credits/run)...")
     search_url = "https://google.serper.dev/search"
     
-    # REVERTED TO PROVEN QUERIES: Google's parser rejects 'inurl:' with special characters like slashes.
-    # These exact text matches are much safer and proven to bypass Google's filters.
+    # WIDER NET: Broader search terms without strict filetypes, 
+    # relying on our Python script to actually test the endpoints.
     queries = [
-        '"/.well-known/agent-card.json"',
-        '"/.well-known/ai-plugin.json"',
-        'filetype:txt "llms.txt" agent',
-        'filetype:json "mcpServers"',
-        'filetype:json "agent_card"'
+        'site:github.io "agent-card.json" OR "ai-plugin.json"',
+        '"llms.txt" "AI agent" OR "LLM"',
+        '"mcpServers" "version"',
+        '"A2A protocol" "agent"',
+        '"openapi.json" "x-agent-api"'
     ]
     
     all_domains = set()
@@ -59,11 +59,11 @@ def discover_new_targets(known_domains):
         print(f"\n-> Asking Google: {q}")
         
         for page in range(1, 3):
-            # Removed the experimental filter/autocorrect params that caused Serper to return 0 results
+            # REMOVED "num": 100. Google's anti-bot blocks niche queries if you ask for 100 at once.
+            # Standard 10 results per page is much safer and bypasses the filter.
             payload = json.dumps({
                 "q": q, 
-                "page": page,
-                "num": 100
+                "page": page
             }) 
             headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'}
             
