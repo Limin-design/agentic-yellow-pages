@@ -18,10 +18,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# --- NEW: Enable CORS for Frontend Access ---
+# --- Enable CORS for Frontend Access ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows any frontend to fetch data. (You can restrict this to your Hostinger domain later).
+    allow_origins=["*"], # Allows any frontend to fetch data
     allow_credentials=True,
     allow_methods=["*"], # Allows GET, POST, etc.
     allow_headers=["*"],
@@ -44,13 +44,14 @@ class AgentSubmission(BaseModel):
 def register_agent(agent: AgentSubmission):
     """
     Allow developers or other agents to submit their own agent card to the directory.
+    Includes strict verification to prevent HTML/Spam submissions.
     """
     if not SUPABASE_URL or not SUPABASE_KEY:
         raise HTTPException(status_code=500, detail="Database configuration missing.")
 
     clean_domain = agent.domain.replace("https://", "").replace("http://", "").rstrip('/')
     
-    # --- VERIFICATION STEP: Prevent Spam ---
+    # --- VERIFICATION STEP: Prevent Spam and Soft-404s ---
     base_url = f"https://{clean_domain}"
     doors_to_check = [
         f"{base_url}/.well-known/agent-card.json",
@@ -61,21 +62,36 @@ def register_agent(agent: AgentSubmission):
     is_verified = False
     for door in doors_to_check:
         try:
-            # 3-second timeout so the API doesn't hang on dead websites
-            res = requests.get(door, timeout=3)
-            if res.status_code == 200:
-                is_verified = True
-                break
+            # 5-second timeout, follow redirects
+            res = requests.get(door, timeout=5, allow_redirects=True)
+            content_type = res.headers.get('Content-Type', '').lower()
+            
+            # 1: Must be a 200 OK
+            # 2: MUST NOT be an HTML page (Stops Google/Reddit from tricking us)
+            if res.status_code == 200 and "text/html" not in content_type:
+                
+                # If we are checking a JSON door, verify the contents parse as valid JSON
+                if door.endswith(".json"):
+                    try:
+                        res.json()
+                        is_verified = True
+                        break
+                    except ValueError:
+                        continue # It's a fake/broken JSON file, keep checking
+                else:
+                    # It's an llms.txt and it passed the HTML check. We are good!
+                    is_verified = True
+                    break
         except requests.RequestException:
             continue
             
     if not is_verified:
         raise HTTPException(
             status_code=400, 
-            detail=f"Verification Failed: Could not detect an A2A protocol (agent-card.json, llms.txt, or ai-plugin.json) at {clean_domain}. Ensure your endpoint is publicly exposed."
+            detail=f"Verification Failed: Could not detect valid A2A data at {clean_domain}. Make sure the file exists and is not returning an HTML page."
         )
     # --- END VERIFICATION ---
-
+    
     db_payload = {
         "domain": clean_domain,
         "name": agent.name,
