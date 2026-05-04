@@ -3,94 +3,152 @@ import json
 import os
 from urllib.parse import urlparse
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
+# Safely load and clean the URL
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip(' "\'')
+if SUPABASE_URL and not SUPABASE_URL.startswith("http"):
+    SUPABASE_URL = f"https://{SUPABASE_URL}"
 
-def discover_new_targets():
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "").strip(' "\'')
+SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "").strip(' "\'')
+
+def get_known_domains():
+    """Fetches all domains currently in our DB to prevent duplicate crawling."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return set()
+        
+    api_url = f"{SUPABASE_URL}/rest/v1/agents?select=domain"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        res = requests.get(api_url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            # Returns a set of domains like {'google.com', 'openai.com'}
+            return {item['domain'] for item in res.json()}
+    except Exception as e:
+        print(f"⚠️ Could not load memory: {e}")
+    return set()
+
+def discover_new_targets(known_domains):
     if not SERPER_API_KEY:
         print("❌ Missing SERPER_API_KEY!")
         return []
 
-    print("🔎 Launching Smart Hunt V3...")
+    print("🚀 Launching SMART HUNT (Target: 5 Credits/run)...")
     search_url = "https://google.serper.dev/search"
     
-    # Kept the best footprints!
+    # ADVANCED GOOGLE DORKS: Forcing exact file types and combining queries with '|'
     queries = [
-        '"/.well-known/agent-card.json"',
-        'filetype:json "mcpServers"',
-        'filetype:txt "llms.txt"'
+        'allinurl:"/.well-known/agent-card.json"',
+        'allinurl:"/.well-known/ai-plugin.json"',
+        'filetype:txt inurl:"llms.txt" "agent" | "llm" | "ai"',
+        'filetype:json "mcpServers" | "mcp-server"',
+        'filetype:json "agent_card" | "name_for_model" | "x-agent-api"'
     ]
     
     all_domains = set()
     
     for q in queries:
-        print(f"  -> Asking Google: {q}")
-        # Removed the 'num' parameter to ensure we stay safely inside the Free Tier limits
-        payload = json.dumps({"q": q}) 
-        headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'}
+        print(f"\n-> Asking Google: {q}")
         
-        try:
-            response = requests.post(search_url, headers=headers, data=payload)
-            results = response.json()
+        # SMART HACK UPGRADED:
+        # We now loop through page 1 and page 2 to get up to 200 results per query!
+        for page in range(1, 3):
+            payload = json.dumps({
+                "q": q, 
+                "page": page,
+                "num": 100, 
+                "tbs": "qdr:m",
+                "autocorrect": False,
+                "filter": 0
+            }) 
+            headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'}
             
-            # 🚨 DIAGNOSTIC CHECK: If Serper is mad at us, this will tell us exactly why!
-            if 'organic' not in results:
-                print(f"     ⚠️ Serper API Error/Warning: {results}")
-                continue
+            try:
+                response = requests.post(search_url, headers=headers, data=payload)
+                results = response.json()
                 
-            found_count = len(results.get('organic', []))
-            print(f"     ✅ Found {found_count} raw links for this query.")
-            
-            for item in results.get('organic', []):
-                parsed = urlparse(item['link'])
-                root_domain = f"{parsed.scheme}://{parsed.netloc}"
-                all_domains.add(root_domain)
+                # If Google runs out of results entirely, stop turning pages
+                if 'organic' not in results:
+                    break 
                     
-        except Exception as e:
-            print(f"     ❌ Search error: {e}")
+                found_count = len(results.get('organic', []))
+                print(f"     Page {page}: Found {found_count} new/updated links from the past 30 days.")
+                
+                for item in results.get('organic', []):
+                    parsed = urlparse(item['link'])
+                    root_domain = f"{parsed.scheme}://{parsed.netloc}"
+                    clean_domain = root_domain.replace("https://", "").replace("http://", "")
+                    
+                    # MEMORY CHECK: Only add it if we don't already have it in Supabase!
+                    if clean_domain not in known_domains:
+                        all_domains.add(root_domain)
+                
+                # If we got less than 100 results, there is no page 2, so break early to save a credit!
+                if found_count < 100:
+                    break
+                    
+            except Exception as e:
+                print(f"     ❌ Search error on page {page}: {e}")
+                break
 
     unique_domains = list(all_domains)
-    print(f"\n✅ Total UNIQUE domains to investigate today: {len(unique_domains)}\n")
+    print(f"\n✅ SMART HUNT COMPLETE! Found {len(unique_domains)} completely NEW domains to check.\n")
     return unique_domains
 
 def fetch_agent_data(base_url):
     print(f"Knocking on doors at: {base_url}")
     
-    door_1 = f"{base_url}/.well-known/agent-card.json"
-    door_2 = f"{base_url}/llms.txt"
+    doors = [
+        f"{base_url}/.well-known/agent-card.json",
+        f"{base_url}/llms.txt",
+        f"{base_url}/.well-known/ai-plugin.json"
+    ]
     
     found_data = None
     
-    try:
-        # Door 1 (A2A Protocol)
-        res1 = requests.get(door_1, timeout=10)
-        if res1.status_code == 200:
-            found_data = res1.json()
-            found_data = found_data.get("agent_card", found_data) if isinstance(found_data, dict) else {}
-            print("  🚪 Found A2A agent-card.json!")
-            
-        # Door 2 (LLMs index)
-        else:
-            res2 = requests.get(door_2, timeout=10)
-            if res2.status_code == 200:
-                print("  📚 Found an llms.txt index!")
-                found_data = {
-                    "name": f"Agent Node at {base_url.replace('https://', '')}",
-                    "description": "An AI-friendly site supporting llms.txt protocol.",
-                    "skills": ["llms-txt"]
-                }
-            else:
-                print("  ⏭️  No agent files found.")
+    for door in doors:
+        try:
+            res = requests.get(door, timeout=5) 
+            if res.status_code == 200:
+                if "agent-card" in door:
+                    data = res.json()
+                    found_data = data.get("agent_card", data) if isinstance(data, dict) else {}
+                    print(f"  🚪 Found A2A Protocol!")
+                    break
+                elif "llms.txt" in door:
+                    print(f"  📚 Found an llms.txt index!")
+                    found_data = {
+                        "name": f"Agent Node at {base_url.replace('https://', '')}",
+                        "description": "An AI-friendly site supporting llms.txt protocol.",
+                        "skills": ["llms-txt"]
+                    }
+                    break
+                elif "ai-plugin" in door:
+                    data = res.json()
+                    print(f"  🔌 Found an AI Plugin!")
+                    found_data = {
+                        "name": data.get("name_for_human", f"Plugin at {base_url.replace('https://', '')}"),
+                        "description": data.get("description_for_human", ""),
+                        "skills": ["ai-plugin", "openai-standard"],
+                        "raw_card": data
+                    }
+                    break
+        except Exception:
+            pass 
 
-    except Exception as e:
-        print(f"  ⚠️ Crawl error (site blocked us): {e}")
-        return # Stop here if we can't crawl the site
+    if not found_data:
+        print("  ⏭️  No agent files found.")
+        return
         
-    # Save to Supabase (Separated so we can see Database errors!)
-    if found_data and SUPABASE_URL and SUPABASE_KEY:
+    # Save to Supabase
+    if SUPABASE_URL and SUPABASE_KEY:
         clean_domain = base_url.replace("https://", "").replace("http://", "").rstrip('/')
         
         db_payload = {
@@ -114,13 +172,24 @@ def fetch_agent_data(base_url):
             if db_res.status_code in [200, 201, 204]:
                 print(f"  ✨ SUCCESSFULLY ADDED TO DB!")
             else:
-                print(f"  ❌ Supabase rejected it. Status: {db_res.status_code}, Error: {db_res.text}")
+                print(f"  ❌ Supabase rejected it. Status: {db_res.status_code}")
         except Exception as e:
-            print(f"  ❌ Database connection error: {e}")
+            print(f"  ❌ Database connection error.")
 
 if __name__ == "__main__":
-    print("🚀 Starting Smart Hunter V3...\n")
-    targets = discover_new_targets()
+    print("🚀 Starting SMART Hunter...\n")
+    
+    # 1. Ask the Database what we already know
+    print("🧠 Checking memory...")
+    known = get_known_domains()
+    print(f"🧠 We already know about {len(known)} agents.")
+    
+    # 2. Discover new targets, passing our memory so we skip duplicates
+    targets = discover_new_targets(known)
+    
+    # 3. Fetch data for only the NEW domains
     for domain in targets:
         fetch_agent_data(domain)
-    print("\n🏁 Automation run complete.")
+        time.sleep(0.5) 
+        
+    print("\n🏁 Smart Automation run complete.")
