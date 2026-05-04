@@ -9,93 +9,81 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY")
 
-# MEMORY FILE: So we don't waste credits checking the same sites every day
-MEMORY_FILE = "checked_domains.txt"
-
-def load_memory():
-    if os.path.exists(MEMORY_FILE):
-        with open(MEMORY_FILE, "r") as f:
-            return set(line.strip() for line in f)
-    return set()
-
-def save_to_memory(domain):
-    with open(MEMORY_FILE, "a") as f:
-        f.write(f"{domain}\n")
-
 def discover_new_targets():
     if not SERPER_API_KEY:
-        return ["https://a2aregistry.org"]
+        print("❌ Missing SERPER_API_KEY!")
+        return []
 
-    print("🔎 Launching Smart Hunt for Agent Protocols...")
+    print("🔎 Launching Smart Hunt V3...")
     search_url = "https://google.serper.dev/search"
     
-    # THE GOLDEN FOOTPRINTS (Google Dorks for the Agentic Web)
+    # Kept the best footprints!
     queries = [
-        # A2A Protocol Cards
         '"/.well-known/agent-card.json"',
-        # Model Context Protocol (MCP) servers
-        'filetype:json "mcpServers" "command"',
-        # Agent documentation manifests
-        'filetype:txt "llms.txt" "agent"',
-        # GitHub agent onboarding files
-        'filetype:md "AGENTS.md"'
+        'filetype:json "mcpServers"',
+        'filetype:txt "llms.txt"'
     ]
     
     all_domains = set()
-    memory = load_memory()
     
     for q in queries:
-        payload = json.dumps({"q": q, "num": 50}) # 50 results per query
+        print(f"  -> Asking Google: {q}")
+        # Removed the 'num' parameter to ensure we stay safely inside the Free Tier limits
+        payload = json.dumps({"q": q}) 
         headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'}
         
         try:
             response = requests.post(search_url, headers=headers, data=payload)
             results = response.json()
+            
+            # 🚨 DIAGNOSTIC CHECK: If Serper is mad at us, this will tell us exactly why!
+            if 'organic' not in results:
+                print(f"     ⚠️ Serper API Error/Warning: {results}")
+                continue
+                
+            found_count = len(results.get('organic', []))
+            print(f"     ✅ Found {found_count} raw links for this query.")
+            
             for item in results.get('organic', []):
                 parsed = urlparse(item['link'])
                 root_domain = f"{parsed.scheme}://{parsed.netloc}"
-                
-                # Check memory before adding
-                if root_domain not in memory:
-                    all_domains.add(root_domain)
+                all_domains.add(root_domain)
                     
         except Exception as e:
-            print(f"❌ Search error: {e}")
+            print(f"     ❌ Search error: {e}")
 
-    print(f"✅ Found {len(all_domains)} NEW domains to investigate today!")
-    return list(all_domains)
+    unique_domains = list(all_domains)
+    print(f"\n✅ Total UNIQUE domains to investigate today: {len(unique_domains)}\n")
+    return unique_domains
 
 def fetch_agent_data(base_url):
-    """Checks the base domain for standard AI Agent files"""
-    print(f"\nKnocking on doors at: {base_url}")
+    print(f"Knocking on doors at: {base_url}")
     
-    # We check the 2 most common "Front Doors"
     door_1 = f"{base_url}/.well-known/agent-card.json"
     door_2 = f"{base_url}/llms.txt"
     
     found_data = None
     
     try:
-        # Knock on Door 1 (A2A Protocol)
+        # Door 1 (A2A Protocol)
         res1 = requests.get(door_1, timeout=5)
         if res1.status_code == 200:
             found_data = res1.json()
-            # Clean up the format
             found_data = found_data.get("agent_card", found_data) if isinstance(found_data, dict) else {}
             print("  🚪 Found A2A agent-card.json!")
             
-        # If Door 1 fails, Knock on Door 2 (llms.txt standard)
+        # Door 2 (LLMs index)
         elif requests.get(door_2, timeout=5).status_code == 200:
-            print("  📚 Found an llms.txt index! Marking as an Agent-Friendly Site.")
+            print("  📚 Found an llms.txt index!")
             found_data = {
                 "name": f"Agent Node at {base_url.replace('https://', '')}",
                 "description": "An AI-friendly site supporting llms.txt protocol.",
-                "skills": ["llms-txt", "agent-readable"]
+                "skills": ["llms-txt"]
             }
         else:
             print("  ⏭️  No agent files found.")
 
-        # If we found something, save it!
+        # Save to Supabase (Supabase naturally ignores duplicates, serving as our memory!)
         if found_data and SUPABASE_URL and SUPABASE_KEY:
             clean_domain = base_url.replace("https://", "").replace("http://", "").rstrip('/')
             
@@ -120,12 +108,9 @@ def fetch_agent_data(base_url):
             
     except Exception as e:
         print(f"  ❌ Failed to connect.")
-        
-    # Always save to memory so we don't check this domain again tomorrow
-    save_to_memory(base_url)
 
 if __name__ == "__main__":
-    print("🚀 Starting Smart Hunter V2...\n")
+    print("🚀 Starting Smart Hunter V3...\n")
     targets = discover_new_targets()
     for domain in targets:
         fetch_agent_data(domain)
