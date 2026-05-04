@@ -43,13 +43,14 @@ def discover_new_targets(known_domains):
     print("🚀 Launching SMART HUNT (Target: 5 Credits/run)...")
     search_url = "https://google.serper.dev/search"
     
-    # ADVANCED GOOGLE DORKS: Loosened 'allinurl' to 'inurl' for better API compatibility
+    # REVERTED TO PROVEN QUERIES: Google's parser rejects 'inurl:' with special characters like slashes.
+    # These exact text matches are much safer and proven to bypass Google's filters.
     queries = [
-        'inurl:"/.well-known/agent-card.json"',
-        'inurl:"/.well-known/ai-plugin.json"',
-        'filetype:txt inurl:"llms.txt" "agent" | "llm" | "ai"',
-        'filetype:json "mcpServers" | "mcp-server"',
-        'filetype:json "agent_card" | "name_for_model" | "x-agent-api"'
+        '"/.well-known/agent-card.json"',
+        '"/.well-known/ai-plugin.json"',
+        'filetype:txt "llms.txt" agent',
+        'filetype:json "mcpServers"',
+        'filetype:json "agent_card"'
     ]
     
     all_domains = set()
@@ -57,16 +58,12 @@ def discover_new_targets(known_domains):
     for q in queries:
         print(f"\n-> Asking Google: {q}")
         
-        # SMART HACK UPGRADED:
-        # We now loop through page 1 and page 2 to get up to 200 results per query!
         for page in range(1, 3):
+            # Removed the experimental filter/autocorrect params that caused Serper to return 0 results
             payload = json.dumps({
                 "q": q, 
                 "page": page,
-                "num": 100, 
-                # REMOVED the 30-day limit. Our 'known_domains' memory will filter old stuff!
-                "autocorrect": False,
-                "filter": 0
+                "num": 100
             }) 
             headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'}
             
@@ -74,13 +71,12 @@ def discover_new_targets(known_domains):
                 response = requests.post(search_url, headers=headers, data=payload)
                 results = response.json()
                 
-                # If Google runs out of results entirely, stop turning pages
                 if 'organic' not in results:
                     print(f"     Page {page}: No organic results found (End of Google's index).")
                     break 
                     
                 found_count = len(results.get('organic', []))
-                print(f"     Page {page}: Found {found_count} new/updated links from the past 30 days.")
+                print(f"     Page {page}: Found {found_count} links.")
                 
                 for item in results.get('organic', []):
                     parsed = urlparse(item['link'])
@@ -91,7 +87,6 @@ def discover_new_targets(known_domains):
                     if clean_domain not in known_domains:
                         all_domains.add(root_domain)
                 
-                # If we got less than 100 results, there is no page 2, so break early to save a credit!
                 if found_count < 100:
                     break
                     
