@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 import requests
 import os
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from typing import List, Dict, Any
 
 # 1. Load environment variables
 load_dotenv()
@@ -19,6 +21,81 @@ app = FastAPI(
 def read_root():
     return {"message": "Welcome to the Agentic Yellow Pages API. Try /agents to list agents."}
 
+# --- Data Validation Model ---
+class AgentSubmission(BaseModel):
+    domain: str
+    name: str
+    description: str = "No description provided."
+    tags: List[str] = []
+    raw_card: Dict[str, Any] = {}
+
+# --- The Registration Desk (POST) ---
+@app.post("/agents")
+def register_agent(agent: AgentSubmission):
+    """
+    Allow developers or other agents to submit their own agent card to the directory.
+    """
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="Database configuration missing.")
+
+    clean_domain = agent.domain.replace("https://", "").replace("http://", "").rstrip('/')
+    
+    db_payload = {
+        "domain": clean_domain,
+        "name": agent.name,
+        "description": agent.description,
+        "tags": agent.tags,
+        "raw_card": agent.raw_card
+    }
+
+    api_url = f"{SUPABASE_URL}/rest/v1/agents"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates" # Updates the agent if they already exist
+    }
+
+    try:
+        response = requests.post(api_url, headers=headers, json=db_payload)
+        response.raise_for_status()
+        return {"status": "success", "message": f"Successfully registered {agent.name} at {clean_domain}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save to database: {str(e)}")
+
+# --- Profile Look-up (GET specific agent) ---
+@app.get("/agents/{domain:path}")
+def get_single_agent(domain: str):
+    """
+    Retrieve the exact details of a single agent using their domain.
+    """
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="Database configuration missing.")
+
+    clean_domain = domain.replace("https://", "").replace("http://", "").rstrip('/')
+    
+    # Query Supabase for this exact domain
+    api_url = f"{SUPABASE_URL}/rest/v1/agents?domain=eq.{clean_domain}&select=*"
+    
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        if not data:
+            raise HTTPException(status_code=404, detail="Agent not found in the directory.")
+            
+        return {"status": "success", "agent": data[0]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Search / List Agents (GET all) ---
 @app.get("/agents")
 def list_agents(tag: str = None, limit: int = 50):
     """
