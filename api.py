@@ -50,6 +50,32 @@ def register_agent(agent: AgentSubmission):
 
     clean_domain = agent.domain.replace("https://", "").replace("http://", "").rstrip('/')
     
+    # --- VERIFICATION STEP: Prevent Spam ---
+    base_url = f"https://{clean_domain}"
+    doors_to_check = [
+        f"{base_url}/.well-known/agent-card.json",
+        f"{base_url}/llms.txt",
+        f"{base_url}/.well-known/ai-plugin.json"
+    ]
+    
+    is_verified = False
+    for door in doors_to_check:
+        try:
+            # 3-second timeout so the API doesn't hang on dead websites
+            res = requests.get(door, timeout=3)
+            if res.status_code == 200:
+                is_verified = True
+                break
+        except requests.RequestException:
+            continue
+            
+    if not is_verified:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Verification Failed: Could not detect an A2A protocol (agent-card.json, llms.txt, or ai-plugin.json) at {clean_domain}. Ensure your endpoint is publicly exposed."
+        )
+    # --- END VERIFICATION ---
+
     db_payload = {
         "domain": clean_domain,
         "name": agent.name,
