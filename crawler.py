@@ -44,7 +44,7 @@ def announce_on_x(name, domain, tags):
             access_token=X_ACCESS_TOKEN, access_token_secret=X_ACCESS_SECRET
         )
         tag_str = ", ".join(tags[:3]) if tags else "autonomous node"
-        tweet_text = f"🚨 New Agent Discovered! 🚨\n\n🤖 {name}\n⚙️ Skills: {tag_str}\n\nWe just indexed this endpoint on the A2A Registry. View details here:\n🌐 agentic-yellow-pages.com\n\n#AI #Agents #MCP"
+        tweet_text = f"🚨 New Agent Discovered! 🚨\n\n🤖 {name}\n⚙️ Skills: {tag_str}\n\nWe just indexed this endpoint on the A2A Registry. View details here:\n🌐 www.agenticyellowpage.com\n\n#AI #Agents #MCP"
         client.create_tweet(text=tweet_text)
         return "🐦 Successfully tweeted announcement!"
     except Exception as e:
@@ -168,8 +168,8 @@ def main():
             else:
                 print(f"  ❌ {domain} yielded no data. Discarding.")
             
-            # Pause for 2 seconds between LLM hits to respect API rate limits
-            time.sleep(2)
+            # Pause for 8 seconds between LLM hits to respect Groq's free-tier token limits
+            time.sleep(8)
 
     print("\n🏁 Turbo Automation run complete.")
 
