@@ -1,28 +1,55 @@
-name: Deep Web Hunter (LLM Scraper)
+import os
+import json
+from scrapegraphai.graphs import SmartScraperGraph
+from dotenv import load_dotenv
 
-on:
-  # This allows us to click a button in GitHub to run it manually
-  workflow_dispatch: 
+# Load your environment variables
+load_dotenv()
+LLM_API_KEY = os.environ.get("LLM_API_KEY") 
 
-jobs:
-  hunt:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+# Configure the Scraper to use Groq's super-fast Llama-3 model
+graph_config = {
+    "llm": {
+        "model": "groq/llama3-70b-8192", 
+        "api_key": LLM_API_KEY,
+        "temperature": 0
+    },
+    "verbose": True,
+    "headless": True # This tells it to run an invisible Chrome browser
+}
+
+def extract_agent_data(target_url):
+    """Uses an LLM to read a human website and convert it to A2A JSON format."""
+    print(f"🕵️‍♂️ Deep Hunting: {target_url}")
+    
+    prompt = """
+    You are an AI directory indexer. Read this website and extract:
+    1. The name of the AI agent or company.
+    2. A short 1-sentence description of what it does.
+    3. A list of 1 to 3 technical tags (e.g., 'mcp-server', 'trading', 'web-scraper').
+    Return ONLY a valid JSON object with keys: "name", "description", "tags".
+    """
+    
+    try:
+        scraper = SmartScraperGraph(
+            prompt=prompt,
+            source=target_url,
+            config=graph_config
+        )
         
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          # This installs the invisible Chrome browser + system dependencies
-          playwright install --with-deps chromium
-          
-      - name: Unleash the LLM
-        env:
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-        run: python deep_hunter.py
+        result = scraper.run()
+        print(f"\n✅ LLM EXTRACTION SUCCESS!")
+        print(json.dumps(result, indent=2))
+        return result
+        
+    except Exception as e:
+        print(f"\n❌ Failed to scrape {target_url}: {e}")
+        return None
+
+if __name__ == "__main__":
+    if not LLM_API_KEY:
+        print("❌ CRITICAL: LLM_API_KEY is missing from environment!")
+    else:
+        # We will test it on Anthropic's homepage first to make sure it works!
+        test_url = "https://www.anthropic.com"
+        extract_agent_data(test_url)
