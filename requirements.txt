@@ -3,10 +3,5 @@ uvicorn
 requests
 python-dotenv
 tweepy
-fastapi
-uvicorn
-requests
-python-dotenv
-tweepy
 scrapegraphai
 playwright
