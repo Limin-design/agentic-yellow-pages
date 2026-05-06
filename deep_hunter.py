@@ -27,7 +27,8 @@ def extract_agent_data(target_url):
     1. The name of the AI agent or company.
     2. A short 1-sentence description of what it does.
     3. A list of 1 to 3 technical tags (e.g., 'mcp-server', 'trading', 'web-scraper').
-    Return ONLY a valid JSON object with keys: "name", "description", "tags".
+    4. The official X (Twitter) handle if found (e.g., '@companyname'). Return null if not found.
+    Return ONLY a valid JSON object with keys: "name", "description", "tags", "x_handle".
     """
     
     try:
