@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 LLM_API_KEY = os.environ.get("LLM_API_KEY") 
 
-# Configure the Scraper to use Groq's super-fast Llama-3 model
+# Configure the Scraper to use Groq's newest Llama 3.3 model
 graph_config = {
     "llm": {
-        "model": "groq/llama3-70b-8192", 
+        "model": "groq/llama-3.3-70b-versatile", 
         "api_key": LLM_API_KEY,
         "temperature": 0
     },
