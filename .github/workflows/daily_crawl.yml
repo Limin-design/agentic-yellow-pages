@@ -21,10 +21,18 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          # INSTALL THE INVISIBLE BROWSER FOR THE LLM FALLBACK
+          playwright install --with-deps chromium
           
       - name: Run Crawler
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           SERPER_API_KEY: ${{ secrets.SERPER_API_KEY }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          # INJECT THE LLM KEY
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: python crawler.py
