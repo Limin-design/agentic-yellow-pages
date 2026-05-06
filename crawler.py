@@ -35,7 +35,18 @@ def get_known_domains():
     except Exception: pass
     return set()
 
-def announce_on_x(name, domain, tags):
+def clean_x_handle(handle):
+    """Ensures handles are formatted perfectly as @username."""
+    if not handle or not isinstance(handle, str):
+        return None
+    handle = handle.strip()
+    if "x.com/" in handle or "twitter.com/" in handle:
+        handle = handle.split("/")[-1].split("?")[0]
+    if not handle.startswith("@"):
+        handle = f"@{handle}"
+    return handle
+
+def announce_on_x(name, domain, tags, x_handle=None):
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
         return "⚠️ X API keys missing, skipping tweet."
     try:
@@ -44,7 +55,13 @@ def announce_on_x(name, domain, tags):
             access_token=X_ACCESS_TOKEN, access_token_secret=X_ACCESS_SECRET
         )
         tag_str = ", ".join(tags[:3]) if tags else "autonomous node"
-        tweet_text = f"🚨 New Agent Discovered! 🚨\n\n🤖 {name}\n⚙️ Skills: {tag_str}\n\nWe just indexed this endpoint on the A2A Registry. View details here:\n🌐 www.agenticyellowpage.com\n\n#AI #Agents #MCP"
+        
+        # Inject the X handle if we found one!
+        clean_handle = clean_x_handle(x_handle)
+        name_line = f"🤖 {name} ({clean_handle})" if clean_handle else f"🤖 {name}"
+        
+        tweet_text = f"🚨 New Agent Discovered! 🚨\n\n{name_line}\n⚙️ Skills: {tag_str}\n\nWe just indexed this endpoint on the A2A Registry. View details here:\n🌐 www.agenticyellowpage.com\n\n#AI #Agents #MCP"
+        
         client.create_tweet(text=tweet_text)
         return "🐦 Successfully tweeted announcement!"
     except Exception as e:
@@ -91,15 +108,17 @@ def discover_new_targets(known_domains):
             time.sleep(1) 
     return list(found_domains)
 
-def save_and_announce(domain, name, description, tags, raw_card):
+def save_and_announce(domain, name, description, tags, raw_card, x_handle=None):
     """Helper function to save to Supabase and Tweet."""
+    # We save everything, including the handle inside raw_card, to Supabase
     db_payload = {"domain": domain, "name": name, "description": description, "tags": tags, "raw_card": raw_card}
     if SUPABASE_URL and SUPABASE_KEY:
         headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates"}
         try:
             res = requests.post(f"{SUPABASE_URL}/rest/v1/agents", headers=headers, json=db_payload)
             res.raise_for_status()
-            tweet_status = announce_on_x(name, domain, tags)
+            # Pass the handle to the Twitter bot
+            tweet_status = announce_on_x(name, domain, tags, x_handle)
             return f"🎉 SUCCESS! Added {domain} to DB. {tweet_status}"
         except Exception as e:
             return f"❌ Failed to save {domain}: {e}"
@@ -145,7 +164,11 @@ def main():
                 name = result.get("name", "Unknown Node")
                 desc = result.get("description", "No description.")
                 tags = result.get("tags", [])
-                print(save_and_announce(futures[future], name, desc, tags, result))
+                
+                # Try to find a Twitter handle in their JSON files
+                x_handle = result.get("x_handle") or result.get("twitter") or result.get("x")
+                
+                print(save_and_announce(futures[future], name, desc, tags, result, x_handle))
             else:
                 # Result is the domain string that failed
                 failed_domains.append(result)
@@ -164,7 +187,10 @@ def main():
                 desc = content.get('description', 'Extracted via Deep Hunter.')
                 tags = content.get('tags', ['ai-agent'])
                 
-                print(save_and_announce(domain, name, desc, tags, llm_result))
+                # Fetch the X handle extracted by the LLM
+                x_handle = content.get('x_handle')
+                
+                print(save_and_announce(domain, name, desc, tags, llm_result, x_handle))
             else:
                 print(f"  ❌ {domain} yielded no data. Discarding.")
             
