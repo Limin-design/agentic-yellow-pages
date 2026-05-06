@@ -51,7 +51,7 @@ def announce_on_x(name, domain, tags):
         )
         
         tag_str = ", ".join(tags[:3]) if tags else "autonomous node"
-        tweet_text = f"🚨 New Agent Registered! 🚨\n\n🤖 {name}\n⚙️ Skills: {tag_str}\n\nWe just verified and indexed this endpoint on the A2A Registry.\n\nExplore it here:\n🌐 agenticyellowpage.com\n\n#AI #Agents #MCP"
+        tweet_text = f"🚨 New Agent Registered! 🚨\n\n🤖 {name}\n⚙️ Skills: {tag_str}\n\nWe just verified and indexed this endpoint on the A2A Registry.\n\nExplore it here:\n🌐 www.agenticyellowpage.com\n\n#AI #Agents #MCP"
         
         client.create_tweet(text=tweet_text)
         print("Successfully tweeted announcement!")
