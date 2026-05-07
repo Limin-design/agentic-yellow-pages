@@ -170,25 +170,42 @@ def register_agent(agent: AgentSubmission):
     if not is_verified:
         raise HTTPException(status_code=400, detail=f"Verification Failed: Could not detect valid A2A data at {clean_domain}.")
     
+    # NEW: We deliberately reset the trust_score and audit_log so the Oracle will re-test the claimed agent.
     db_payload = {
         "domain": clean_domain,
         "name": agent.name,
         "description": agent.description,
         "tags": agent.tags,
-        "raw_card": agent.raw_card
+        "raw_card": agent.raw_card,
+        "trust_score": None,
+        "audit_log": None
     }
 
-    api_url = f"{SUPABASE_URL}/rest/v1/agents"
-    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Prefer": "resolution=merge-duplicates"}
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
 
     try:
-        response = requests.post(api_url, headers=headers, json=db_payload)
-        response.raise_for_status()
+        # STEP 1: Check if the agent was already scraped by our bots
+        check_url = f"{SUPABASE_URL}/rest/v1/agents?domain=eq.{clean_domain}&select=id"
+        check_res = requests.get(check_url, headers=headers)
+        check_res.raise_for_status()
+        existing_agent = check_res.json()
+        
+        # STEP 2: Update (Claim) if it exists, or Insert (Create) if it doesn't
+        if existing_agent and len(existing_agent) > 0:
+            patch_url = f"{SUPABASE_URL}/rest/v1/agents?domain=eq.{clean_domain}"
+            response = requests.patch(patch_url, headers=headers, json=db_payload)
+            response.raise_for_status()
+            message = f"Successfully claimed and updated {agent.name} at {clean_domain}"
+        else:
+            post_url = f"{SUPABASE_URL}/rest/v1/agents"
+            response = requests.post(post_url, headers=headers, json=db_payload)
+            response.raise_for_status()
+            message = f"Successfully registered {agent.name} at {clean_domain}"
         
         # --- NEW: Trigger the auto-tweet when a human registers successfully! ---
         announce_on_x(agent.name, clean_domain, agent.tags)
         
-        return {"status": "success", "message": f"Successfully registered {agent.name} at {clean_domain}"}
+        return {"status": "success", "message": message}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save to database: {str(e)}")
 
