@@ -103,12 +103,12 @@ def get_mcp_manifest():
     }
 
 @app.get("/agents.md", response_class=PlainTextResponse)
-def list_agents_markdown(tag: str = None, limit: int = 50):
+def list_agents_markdown(tag: str = None, limit: int = 1000):
     if not SUPABASE_URL or not SUPABASE_KEY:
         raise HTTPException(status_code=500, detail="Database missing.")
 
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-    api_url = f"{SUPABASE_URL}/rest/v1/agents?select=*"
+    api_url = f"{SUPABASE_URL}/rest/v1/agents?select=*&order=id.desc"
     if tag: api_url += f"&tags=cs.%7B{tag}%7D"
     api_url += f"&limit={limit}"
 
@@ -210,10 +210,10 @@ def register_agent(agent: AgentSubmission):
         raise HTTPException(status_code=500, detail=f"Failed to save to database: {str(e)}")
 
 @app.get("/agents")
-def list_agents(tag: str = None, limit: int = 50):
+def list_agents(tag: str = None, limit: int = 1000):
     if not SUPABASE_URL or not SUPABASE_KEY: raise HTTPException(status_code=500, detail="Database missing.")
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-    api_url = f"{SUPABASE_URL}/rest/v1/agents?select=*"
+    api_url = f"{SUPABASE_URL}/rest/v1/agents?select=*&order=id.desc"
     if tag: api_url += f"&tags=cs.%7B{tag}%7D"
     api_url += f"&limit={limit}"
     try:
