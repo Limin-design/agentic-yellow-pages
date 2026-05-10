@@ -35,6 +35,7 @@ jobs:
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          # The dummy test doesn't need Supabase keys because it's running locally on the GitHub server!
+          SUPABASE_URL: "https://dummy-test-url.supabase.co" # <-- ADD THIS
+          SUPABASE_KEY: "dummy_key"
         run: |
           python test_oracle.py
