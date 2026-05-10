@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import tweepy
 
 from deep_hunter import extract_agent_data, STATUS_SUCCESS, STATUS_NOT_AGENT, STATUS_FAILED
+from utils import clean_x_handle
 
 load_dotenv()
 
@@ -156,17 +157,6 @@ def save_to_blocklist(domain: str) -> None:
 
 
 # ── X (Twitter) ───────────────────────────────────────────────────────────────
-def clean_x_handle(handle) -> str | None:
-    if not handle or not isinstance(handle, str):
-        return None
-    handle = handle.strip()
-    if "x.com/" in handle or "twitter.com/" in handle:
-        handle = handle.split("/")[-1].split("?")[0]
-    if not handle.startswith("@"):
-        handle = f"@{handle}"
-    return handle or None
-
-
 def announce_on_x(name: str, domain: str, tags: list, x_handle: str | None = None) -> bool:
     """Posts a discovery tweet. Returns True on success."""
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
