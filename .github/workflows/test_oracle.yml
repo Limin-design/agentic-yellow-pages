@@ -1,0 +1,40 @@
+name: 🧪 Test Oracle Scoring
+
+on:
+  workflow_dispatch: # Allows you to click a button to run it manually
+  push:
+    paths:
+      - 'sample_agent.py'
+      - 'test_oracle.py'
+
+jobs:
+  run-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install fastapi uvicorn requests pydantic pydantic-settings python-dotenv groq
+          # Install any other dependencies your benchmark.py relies on
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Start Dummy Agent in Background
+        run: |
+          python sample_agent.py &
+          echo "Waiting for agent to boot..."
+          sleep 5 
+
+      - name: Fire Oracle Benchmark
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          # The dummy test doesn't need Supabase keys because it's running locally on the GitHub server!
+        run: |
+          python test_oracle.py
