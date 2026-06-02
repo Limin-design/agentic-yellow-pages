@@ -30,18 +30,20 @@ app = FastAPI(
 # --- Enable CORS for Frontend Access ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], 
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
+TWEET_MAX_LENGTH = 280
 
 def announce_on_x(name, domain, tags):
     """Automatically tweet when a human registers a new agent."""
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET]):
         print("X API keys missing, skipping tweet.")
         return False
-        
+
     try:
         client = tweepy.Client(
             consumer_key=X_API_KEY,
@@ -49,10 +51,19 @@ def announce_on_x(name, domain, tags):
             access_token=X_ACCESS_TOKEN,
             access_token_secret=X_ACCESS_SECRET
         )
-        
+
         tag_str = ", ".join(tags[:3]) if tags else "autonomous node"
+        if len(tag_str) > 50:
+            tag_str = tag_str[:47] + "..."
+
         tweet_text = f"🚨 New Agent Registered! 🚨\n\n🤖 {name}\n⚙️ Skills: {tag_str}\n\nWe just verified and indexed this endpoint on the A2A Registry.\n\nExplore it here:\n🌐 www.agenticyellowpage.com\n\n#AI #Agents #MCP"
-        
+
+        if len(tweet_text) > TWEET_MAX_LENGTH:
+            overflow = len(tweet_text) - TWEET_MAX_LENGTH + 3
+            name_line = f"🤖 {name}"
+            name_line = name_line[:-overflow] + "..."
+            tweet_text = f"🚨 New Agent Registered! 🚨\n\n{name_line}\n⚙️ Skills: {tag_str}\n\nWe just verified and indexed this endpoint on the A2A Registry.\n\nExplore it here:\n🌐 www.agenticyellowpage.com\n\n#AI #Agents #MCP"
+
         client.create_tweet(text=tweet_text)
         print("Successfully tweeted announcement!")
         return True
@@ -72,7 +83,7 @@ def get_llms_txt():
 This API allows AI agents, orchestrators, and MCP clients to search for specialized AI nodes, tools, and endpoints across the internet.
 
 ## Core Capabilities for AI Agents:
-- Search the directory: Make a GET request to `/agents`. 
+- Search the directory: Make a GET request to `/agents`.
 - Filter by skill: Make a GET request to `/agents?tag={skill}`
 - Look up a specific node: Make a GET request to `/agents/{domain}`.
 - Register yourself: Make a POST request to `/agents` with your domain.
@@ -116,10 +127,10 @@ def list_agents_markdown(tag: str = None, limit: int = 1000):
         response = requests.get(api_url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        
+
         md_lines = [f"# Agentic Yellow Pages - {tag.capitalize() if tag else 'All'} Agents\n"]
         md_lines.append("> The Discovery Layer for Autonomous Agents.\n")
-        
+
         for agent in data:
             domain = agent.get('domain', 'Unknown')
             name = agent.get('name', 'Unnamed Agent')
@@ -129,7 +140,7 @@ def list_agents_markdown(tag: str = None, limit: int = 1000):
             md_lines.append(f"**Description:** {desc}")
             md_lines.append(f"**Skills/Tags:** {tags_list}")
             md_lines.append(f"**API Endpoint:** `https://{domain}`\n")
-            
+
         return "\n".join(md_lines)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -149,7 +160,7 @@ def register_agent(agent: AgentSubmission):
     clean_domain = agent.domain.replace("https://", "").replace("http://", "").rstrip('/')
     base_url = f"https://{clean_domain}"
     doors_to_check = [f"{base_url}/.well-known/agent-card.json", f"{base_url}/llms.txt", f"{base_url}/.well-known/ai-plugin.json"]
-    
+
     is_verified = False
     for door in doors_to_check:
         try:
@@ -166,10 +177,10 @@ def register_agent(agent: AgentSubmission):
                     is_verified = True
                     break
         except requests.RequestException: continue
-            
+
     if not is_verified:
         raise HTTPException(status_code=400, detail=f"Verification Failed: Could not detect valid A2A data at {clean_domain}.")
-    
+
     # NEW: We deliberately reset the trust_score and audit_log so the Oracle will re-test the claimed agent.
     db_payload = {
         "domain": clean_domain,
@@ -189,7 +200,7 @@ def register_agent(agent: AgentSubmission):
         check_res = requests.get(check_url, headers=headers)
         check_res.raise_for_status()
         existing_agent = check_res.json()
-        
+
         # STEP 2: Update (Claim) if it exists, or Insert (Create) if it doesn't
         if existing_agent and len(existing_agent) > 0:
             patch_url = f"{SUPABASE_URL}/rest/v1/agents?domain=eq.{clean_domain}"
@@ -201,10 +212,10 @@ def register_agent(agent: AgentSubmission):
             response = requests.post(post_url, headers=headers, json=db_payload)
             response.raise_for_status()
             message = f"Successfully registered {agent.name} at {clean_domain}"
-        
+
         # --- NEW: Trigger the auto-tweet when a human registers successfully! ---
         announce_on_x(agent.name, clean_domain, agent.tags)
-        
+
         return {"status": "success", "message": message}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save to database: {str(e)}")
