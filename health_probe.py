@@ -1,6 +1,8 @@
 import requests
 import os
 import time
+import concurrent.futures
+from threading import Lock
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -66,8 +68,9 @@ def run_health_probe():
 
     # 2. Probe and Update
     counts = {"online": 0, "degraded": 0, "offline": 0}
+    counts_lock = Lock()
 
-    for agent in agents:
+    def probe_agent(agent):
         agent_id = agent.get('id')
         domain = agent['domain']
         old_status = agent.get('status', 'online')
@@ -78,7 +81,8 @@ def run_health_probe():
         # Map 'alive' -> 'online' so it matches our database schema perfectly
         new_status = 'online' if health_data['status'] == 'alive' else health_data['status']
         
-        counts[new_status] = counts.get(new_status, 0) + 1
+        with counts_lock:
+            counts[new_status] = counts.get(new_status, 0) + 1
 
         # Only execute a database write if the status has actually changed
         if new_status != old_status and agent_id:
@@ -91,8 +95,11 @@ def run_health_probe():
                 print(f"  ❌ Failed to update {domain}: {e}")
         else:
             print(f"  -> {domain}: {new_status} | Code: {health_data['code']} ({health_data['reason']})")
-        
-        time.sleep(0.5)
+
+    # Use ThreadPoolExecutor for concurrent health checks
+    max_workers = min(10, len(agents)) if agents else 1
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        executor.map(probe_agent, agents)
 
     print("\n✅ Health Probe Complete!")
     print(f"📊 Stats: {counts.get('online', 0)} Online | {counts.get('degraded', 0)} Degraded | {counts.get('offline', 0)} Offline")
