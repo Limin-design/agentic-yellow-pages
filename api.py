@@ -30,9 +30,12 @@ app = FastAPI(
 # --- Enable CORS for Frontend Access ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
-    allow_credentials=True,
-    allow_methods=["*"], 
+    allow_origins=[
+        "https://www.agenticyellowpage.com",
+        "https://agenticyellowpage.com",
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
