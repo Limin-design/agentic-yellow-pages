@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>Agentic Yellow Pages | The A2A Discovery Directory</title>
+    <meta name="title" content="Agentic Yellow Pages | The A2A Discovery Directory">
+    <meta name="description" content="The machine-readable directory of AI agents another agent can call: remote MCP servers from the official registry, each tested over the protocol every day for availability, latency and tools.">
+    <meta name="keywords" content="AI agents, MCP server, machine-to-machine, A2A, autonomous agents, llms.txt, AI directory, crypto, web3">
+    <meta name="author" content="Agentic YP">
+    <meta name="robots" content="index, follow">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="logo.png?v=2">
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.agenticyellowpage.com/">
+    <meta property="og:title" content="Agentic Yellow Pages | Autonomous Agent Directory">
+    <meta property="og:description" content="The machine-readable directory of AI agents another agent can call: remote MCP servers from the official registry, each tested over the protocol every day for availability, latency and tools.">
+    <!-- Dark Network Graph representation -->
+    <meta property="og:image" content="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1200&auto=format&fit=crop">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.agenticyellowpage.com/">
+    <meta property="twitter:title" content="Agentic Yellow Pages | Autonomous Agent Directory">
+    <meta property="twitter:description" content="The machine-readable directory of AI agents another agent can call: remote MCP servers from the official registry, each tested over the protocol every day for availability, latency and tools.">
+
+    <!-- Google JSON-LD Structured Data (Dynamic) -->
+    <script type="application/ld+json" id="schema-jsonld">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Agentic Yellow Pages",
+      "url": "https://www.agenticyellowpage.com/",
+      "description": "The machine-readable directory of autonomous AI agents.",
+      "mainEntity": {
+        "@type": "ItemList",
+        "itemListElement": []
+      }
+    }
+    </script>
+
+    <!-- Tailwind CSS & Phosphor Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        sb: {
+                            bg: '#0a0a0a', surface: '#141414', border: '#262626',
+                            green: '#3ecf8e', greenHover: '#2ab877',
+                            text: '#f5f5f5', muted: '#a3a3a3'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Menlo', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            background-color: #0a0a0a;
+            /* Subtle technical grid background */
+            background-image: 
+                linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3ecf8e; }
+        
+        .glass-panel { background: rgba(20, 20, 20, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #262626; }
+        
+        /* Progress Tracker Styles */
+        .progress-step { transition: all 0.3s ease; }
+        .progress-step.active .step-icon { background-color: #3ecf8e; color: #0a0a0a; border-color: #3ecf8e; }
+        .progress-step.completed .step-icon { background-color: #141414; color: #3ecf8e; border-color: #3ecf8e; }
+        .progress-line { transition: all 0.5s ease; }
+    </style>
+</head>
+<body class="text-sb-text font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Navigation Bar -->
+    <nav class="glass-panel sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <img src="logo.png?v=2" alt="Agentic YP Logo" class="h-8 w-8 object-contain" onerror="this.style.display='none'">
+                    <span class="font-bold text-xl tracking-tight">Agentic<span class="text-sb-green">YP</span></span>
+                </div>
+                <div class="flex gap-4 items-center">
+                    <a href="#how-it-works" class="text-sm text-sb-muted hover:text-sb-text transition-colors hidden md:block">How it Works</a>
+                    <a href="#sdks" class="text-sm text-sb-muted hover:text-sb-text transition-colors hidden md:block">SDKs</a>
+                    <a href="https://agentic-yellow-pages.onrender.com/docs" target="_blank" class="text-sm text-sb-muted hover:text-sb-text transition-colors hidden sm:flex items-center gap-1">
+                        <i class="ph ph-terminal-window"></i> REST API
+                    </a>
+                    <button onclick="openModal()" class="bg-sb-green hover:bg-sb-greenHover text-[#111] text-sm font-semibold py-2 px-4 rounded-md transition-all flex items-center gap-2">
+                        <i class="ph-fill ph-cpu"></i> Register & Benchmark
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="max-w-4xl mx-auto px-4 pt-20 pb-12 text-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sb-surface border border-sb-border text-xs font-mono text-sb-green mb-6 shadow-[0_0_15px_rgba(62,207,142,0.1)]">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sb-green opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-sb-green"></span>
+            </span>
+            Live A2A Registry
+        </div>
+        
+        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+            The Discovery Layer for <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Autonomous Agents</span>
+        </h1>
+        
+        <!-- Live Counter -->
+        <div class="flex justify-center items-center gap-4 text-sm font-mono text-sb-muted mb-6 bg-[#0f0f0f] border border-sb-border w-max mx-auto px-4 py-2 rounded-lg">
+            <div><span id="totalAgentsCounter" class="text-sb-text font-bold">--</span> indexed</div>
+            <div class="w-1 h-1 rounded-full bg-sb-border"></div>
+            <div><span id="auditedTodayCounter" class="text-sb-text font-bold">--</span> working now</div>
+        </div>
+
+        <p class="text-lg text-sb-muted mb-10 max-w-2xl mx-auto">
+            Every day we read the official MCP Registry, connect to each server over MCP, and record whether it answers, how fast, and which tools it offers.
+        </p>
+
+        <!-- Hero CTAs -->
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16">
+            <button onclick="openModal()" class="bg-sb-green hover:bg-sb-greenHover text-[#111] text-base font-bold py-3 px-8 rounded-xl transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(62,207,142,0.25)] hover:shadow-[0_0_30px_rgba(62,207,142,0.4)]">
+                <i class="ph-fill ph-rocket-launch"></i> Register & Benchmark Agent
+            </button>
+            <a href="#directory" class="bg-sb-surface hover:bg-[#1a1a1a] border border-sb-border text-sb-text text-base font-medium py-3 px-8 rounded-xl transition-all flex items-center gap-2">
+                <i class="ph ph-magnifying-glass"></i> Explore Directory
+            </a>
+        </div>
+    </header>
+
+    <!-- How the Benchmark Works -->
+    <section id="how-it-works" class="max-w-6xl mx-auto px-4 py-12 mb-12">
+        <h2 class="text-2xl font-bold text-center mb-10">How the Daily Protocol Check Works</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+            <!-- Connecting Line (Desktop) -->
+            <div class="hidden md:block absolute top-1/2 left-[15%] right-[15%] h-px bg-sb-border -z-10"></div>
+            
+            <div class="bg-sb-surface border border-sb-border rounded-xl p-6 text-center relative z-10 shadow-lg">
+                <div class="w-12 h-12 bg-[#111] border border-sb-border rounded-full flex items-center justify-center mx-auto mb-4 text-cyan-400">
+                    <i class="ph-fill ph-magnifying-glass text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold mb-2">1. Discover</h3>
+                <p class="text-sm text-sb-muted">We read the official MCP Registry and keep every active server that publishes a public HTTPS endpoint.</p>
+            </div>
+            
+            <div class="bg-sb-surface border border-sb-border rounded-xl p-6 text-center relative z-10 shadow-lg">
+                <div class="w-12 h-12 bg-[#111] border border-sb-border rounded-full flex items-center justify-center mx-auto mb-4 text-amber-400">
+                    <i class="ph-fill ph-lightning text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold mb-2">2. Probe</h3>
+                <p class="text-sm text-sb-muted">Each endpoint gets a real MCP handshake: <code class="text-xs bg-[#111] px-1 py-0.5 rounded">initialize</code>, then <code class="text-xs bg-[#111] px-1 py-0.5 rounded">tools/list</code>. Read-only: no tool is ever called.</p>
+            </div>
+            
+            <div class="bg-sb-surface border border-sb-border rounded-xl p-6 text-center relative z-10 shadow-lg border-b-2 border-b-sb-green">
+                <div class="w-12 h-12 bg-[#111] border border-sb-border rounded-full flex items-center justify-center mx-auto mb-4 text-sb-green">
+                    <i class="ph-fill ph-scales text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold mb-2">3. Score</h3>
+                <p class="text-sm text-sb-muted">Reachable 20 + answers MCP 40 + lists tools 20 + latency 20. Servers behind authentication are listed and tagged, without a score. It measures whether an agent can connect, not quality.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Leaderboard Section -->
+    <section class="max-w-6xl mx-auto px-4 py-8 mb-8" id="leaderboard-section">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold flex items-center gap-2"><i class="ph-fill ph-trophy text-yellow-500"></i> Top Trusted Agents</h2>
+        </div>
+        <div class="bg-sb-surface border border-sb-border rounded-xl overflow-x-auto shadow-xl">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-[#111] border-b border-sb-border text-xs uppercase font-mono text-sb-muted">
+                    <tr>
+                        <th class="px-6 py-4 font-semibold">Rank</th>
+                        <th class="px-6 py-4 font-semibold">Agent Name</th>
+                        <th class="px-6 py-4 font-semibold">Domain</th>
+                        <th class="px-6 py-4 font-semibold">Latency</th>
+                        <th class="px-6 py-4 font-semibold">Tools</th>
+                        <th class="px-6 py-4 font-semibold">Protocol</th>
+                        <th class="px-6 py-4 font-semibold text-right">Score</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody" class="divide-y divide-sb-border">
+                    <!-- Leaderboard Rows Injected Here -->
+                    <tr><td colspan="7" class="text-center py-8 text-sb-muted"><i class="ph ph-spinner-gap animate-spin inline-block mr-2"></i> Loading Rankings...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- NEW: SDKs & Developers Section -->
+    <section id="sdks" class="max-w-6xl mx-auto px-4 py-4 mb-12">
+        <div class="bg-[#0f0f0f] border border-sb-border rounded-2xl p-8 relative overflow-hidden shadow-2xl">
+            <!-- decorative background glow -->
+            <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-sb-green/5 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex flex-col md:flex-row gap-8 items-center relative z-10">
+                <div class="flex-1">
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-900/20 border border-blue-800/50 text-blue-400 text-[10px] uppercase font-bold tracking-wider mb-4">
+                        <i class="ph-fill ph-code"></i> For Developers & Orchestrators
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">Route to Trusted Agents Programmatically</h2>
+                    <p class="text-sb-muted text-sm leading-relaxed mb-6">
+                        Stop hardcoding URLs. Use our official SDKs to dynamically discover, filter, and route your system's data to A2A endpoints based on their cryptographic Trust Score and live health metrics.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="https://pypi.org/project/agentic-yp/" target="_blank" class="text-sm font-medium text-white hover:text-sb-green transition-colors flex items-center gap-2">
+                            <i class="ph-fill ph-package"></i> PyPI Package
+                        </a>
+                        <a href="https://www.npmjs.com/package/agentic-yp" target="_blank" class="text-sm font-medium text-white hover:text-sb-green transition-colors flex items-center gap-2">
+                            <i class="ph-fill ph-cube"></i> NPM Package
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="flex-1 w-full max-w-md">
+                    <div class="bg-[#050505] border border-[#222] rounded-xl p-5 font-mono text-sm shadow-inner">
+                        <div class="mb-2 text-xs text-sb-muted"># Python (PyPI)</div>
+                        <div class="flex justify-between items-center bg-[#111] border border-[#222] rounded py-2 px-3 mb-5 group cursor-pointer hover:border-sb-muted transition-colors" onclick="navigator.clipboard.writeText('pip install agentic-yp')">
+                            <span><span class="text-sb-green">pip</span> install agentic-yp</span>
+                            <i class="ph ph-copy text-sb-muted group-hover:text-white transition-colors"></i>
+                        </div>
+                        
+                        <div class="mb-2 text-xs text-sb-muted"># Node.js / TypeScript (NPM)</div>
+                        <div class="flex justify-between items-center bg-[#111] border border-[#222] rounded py-2 px-3 group cursor-pointer hover:border-sb-muted transition-colors" onclick="navigator.clipboard.writeText('npm install agentic-yp')">
+                            <span><span class="text-blue-400">npm</span> install agentic-yp</span>
+                            <i class="ph ph-copy text-sb-muted group-hover:text-white transition-colors"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content: Agent Directory -->
+    <main id="directory" class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 w-full relative">
+        <h2 class="text-2xl font-bold mb-6">Global Directory</h2>
+        
+        <!-- Search & Filter Bar -->
+        <div class="flex flex-col md:flex-row gap-4 mb-8">
+            <div class="relative flex-grow">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="ph ph-magnifying-glass text-sb-muted text-lg"></i>
+                </div>
+                <input type="text" id="searchInput" placeholder="Search domains, names, or tags..." 
+                    class="w-full bg-sb-surface border border-sb-border text-sb-text rounded-lg py-3 pl-11 pr-4 focus:outline-none focus:border-sb-green transition-colors">
+            </div>
+            <div class="relative min-w-[200px]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="ph ph-funnel text-sb-muted"></i>
+                </div>
+                <select id="tagFilter" class="w-full appearance-none bg-sb-surface border border-sb-border text-sb-text rounded-lg py-3 pl-10 pr-10 focus:outline-none focus:border-sb-green transition-colors cursor-pointer">
+                    <option value="all">All Tags</option>
+                    <!-- Tags injected here -->
+                </select>
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-sb-muted">
+                    <i class="ph ph-caret-down"></i>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingState" class="flex flex-col items-center justify-center py-20 text-sb-muted">
+            <i class="ph ph-spinner-gap animate-spin text-4xl text-sb-green mb-4"></i>
+            <p>Loading the directory...</p>
+        </div>
+
+        <div id="errorState" class="hidden flex-col items-center justify-center py-20 text-red-400">
+            <i class="ph ph-warning-circle text-4xl mb-4"></i>
+            <p id="errorMessage">Failed to load agents.</p>
+        </div>
+
+        <div id="agentGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cards injected here -->
+        </div>
+
+        <!-- Hiding default empty state to use dynamic emptyDirectoryHTML string -->
+        <div id="emptyState" class="hidden"></div>
+    </main>
+
+    <!-- CLAIM & AUDIT MODAL -->
+    <div id="claimModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-sb-surface border border-sb-border rounded-xl w-full max-w-md shadow-2xl relative overflow-hidden">
+            <div class="h-1 w-full bg-gradient-to-r from-sb-green to-emerald-900"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Claim & Audit Agent</h2>
+                    <button onclick="closeClaimModal()" class="text-sb-muted hover:text-white transition-colors">
+                        <i class="ph ph-x text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Step 1: Info -->
+                <div id="claimStep1">
+                    <div class="bg-[#111] border border-sb-border text-sb-muted text-sm p-4 rounded-lg mb-6">
+                        <p class="mb-2">Our crawlers found <strong id="claimDomainTarget" class="text-sb-green font-mono"></strong> autonomously.</p>
+                        <p>To have it checked, verify ownership and queue a protocol check.</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-sb-muted uppercase tracking-wider mb-2">Verification Method</label>
+                        <select id="claimVerifyMethod" class="w-full bg-[#111] border border-sb-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-sb-green">
+                            <option value="file">File (llms.txt / mcp.json present)</option>
+                            <option value="dns">DNS TXT Record</option>
+                        </select>
+                    </div>
+
+                    <button onclick="submitClaimRequest()" class="w-full bg-sb-green hover:bg-sb-greenHover text-[#111] font-bold py-2.5 rounded-lg transition-colors flex justify-center items-center gap-2">
+                        Verify & Queue Audit
+                    </button>
+                </div>
+
+                <!-- Step 2: Progress Tracker (Hidden initially) -->
+                <div id="claimStep2" class="hidden">
+                    <h3 class="font-bold text-center mb-6">Audit Status</h3>
+                    
+                    <div class="relative px-4 pb-4">
+                        <div class="absolute left-6 top-4 bottom-4 w-0.5 bg-sb-border progress-line z-0"></div>
+                        
+                        <div class="flex items-start gap-4 mb-6 relative z-10 progress-step active">
+                            <div class="w-5 h-5 rounded-full border-2 border-sb-border bg-[#111] flex-shrink-0 mt-0.5 step-icon flex items-center justify-center text-[10px]">1</div>
+                            <div>
+                                <p class="text-sm font-bold text-white">Verification Complete</p>
+                                <p class="text-xs text-sb-muted">Domain ownership confirmed.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 mb-6 relative z-10 progress-step active">
+                            <div class="w-5 h-5 rounded-full border-2 border-sb-border bg-[#111] flex-shrink-0 mt-0.5 step-icon flex items-center justify-center text-[10px] animate-pulse">2</div>
+                            <div>
+                                <p class="text-sm font-bold text-sb-green">Queued for Benchmarking</p>
+                                <p class="text-xs text-sb-muted">Estimated time: 1-2 days.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 mb-6 relative z-10 progress-step">
+                            <div class="w-5 h-5 rounded-full border-2 border-sb-border bg-[#111] flex-shrink-0 mt-0.5 step-icon flex items-center justify-center text-[10px]">3</div>
+                            <div>
+                                <p class="text-sm font-bold text-sb-muted">Protocol check</p>
+                                <p class="text-xs text-sb-muted">MCP handshake and tools/list.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 relative z-10 progress-step">
+                            <div class="w-5 h-5 rounded-full border-2 border-sb-border bg-[#111] flex-shrink-0 mt-0.5 step-icon flex items-center justify-center text-[10px]">4</div>
+                            <div>
+                                <p class="text-sm font-bold text-sb-muted">Score Published</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="closeClaimModal()" class="w-full bg-[#111] hover:bg-[#1a1a1a] border border-sb-border text-white font-medium py-2 rounded-lg transition-colors mt-4">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STANDARD REGISTRATION MODAL -->
+    <div id="registerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-sb-surface border border-sb-border rounded-xl w-full max-w-md shadow-2xl relative overflow-hidden my-auto max-h-[90vh] overflow-y-auto">
+            <div class="h-1 w-full bg-gradient-to-r from-sb-green to-emerald-900"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Register & Benchmark Agent</h2>
+                    <button onclick="closeModal()" class="text-sb-muted hover:text-white transition-colors">
+                        <i class="ph ph-x text-xl"></i>
+                    </button>
+                </div>
+                <form id="registerForm" class="space-y-4">
+                    <div class="bg-blue-900/20 border border-blue-800 text-blue-300 text-xs p-3 rounded-md mb-4 flex gap-2 items-start">
+                        <i class="ph-fill ph-info text-base mt-0.5"></i>
+                        <p><strong>Anti-Spam Verification:</strong> We ping your domain to confirm your A2A endpoint exists before running the full benchmark.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-sb-muted mb-1">Domain / Endpoint URL</label>
+                        <input type="text" id="regDomain" required placeholder="api.youragent.com" class="w-full bg-[#111] border border-sb-border rounded-lg py-2 px-3 text-sm font-mono focus:outline-none focus:border-sb-green">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-sb-muted mb-1">Agent Name</label>
+                        <input type="text" id="regName" required placeholder="AutoScout Pro" class="w-full bg-[#111] border border-sb-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-sb-green">
+                    </div>
+                    
+                    <!-- NEW FIELD: Agent Family -->
+                    <div>
+                        <label class="block text-sm font-medium text-sb-muted mb-1">Agent Family / Core Model</label>
+                        <select id="regFamily" class="w-full bg-[#111] border border-sb-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-sb-green appearance-none">
+                            <option value="Unknown">Auto-Detect / Custom</option>
+                            <option value="Meta">Meta / Llama Family</option>
+                            <option value="Mistral">Mistral Family</option>
+                            <option value="Google">Google / Gemma Family</option>
+                            <option value="OpenAI">OpenAI Family</option>
+                            <option value="Anthropic">Anthropic Claude</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-sb-muted mb-1">Description</label>
+                        <textarea id="regDesc" rows="2" placeholder="Briefly describe what this agent does..." class="w-full bg-[#111] border border-sb-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-sb-green resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-sb-muted mb-1">Tags / Skills (Comma separated)</label>
+                        <input type="text" id="regTags" placeholder="mcp-server, search, web-crawler" class="w-full bg-[#111] border border-sb-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:border-sb-green font-mono">
+                    </div>
+                    <div id="formStatus" class="hidden text-sm py-2 px-3 rounded-md"></div>
+                    <button type="submit" id="submitBtn" class="w-full bg-sb-green hover:bg-sb-greenHover text-[#111] font-bold py-2.5 rounded-lg mt-4 transition-colors flex justify-center items-center gap-2">
+                        <span>Submit for Verification</span>
+                    </button>
+                    <p class="text-[10px] text-center text-sb-muted mt-2">Standard audit queue time: 1-2 days.</p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Minimal Footer -->
+    <footer class="border-t border-sb-border py-8 mt-auto bg-sb-surface/50">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <img src="logo.png?v=2" alt="Logo" class="w-5 h-5 opacity-50 grayscale" onerror="this.style.display='none'">
+                <p class="text-sm text-sb-muted">&copy; 2026 Agentic Yellow Pages.</p>
+            </div>
+            <div class="flex gap-6 text-sm font-medium">
+                <a href="#how-it-works" class="text-sb-muted hover:text-white transition-colors">How it works</a>
+                <a href="https://agentic-yellow-pages.onrender.com/docs" target="_blank" class="text-sb-muted hover:text-white transition-colors">API Docs</a>
+                <a href="https://x.com/AgenticYP" target="_blank" class="text-sb-muted hover:text-white transition-colors flex items-center gap-1">
+                    <i class="ph-fill ph-x-logo"></i> @AgenticYP
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        // ─── AGENT FILTERING LOGIC ──────────────────────────────────────────────
+        const shouldSkip = (agent) => {
+            const tagStr  = (agent.tags || []).join(' ').toLowerCase();
+            const name    = (agent.name || '').trim().toLowerCase();
+            const isDataNode  = /llms[-.]?txt/.test(tagStr);
+            const isUnclaimed = /^(na|unknown node|scraped node|agent node at .+)$/.test(name);
+            return isDataNode || isUnclaimed;
+        };
+
+        // ─── EMPTY STATE HTML STRINGS ───────────────────────────────────────────
+        const emptyLeaderboardHTML = `
+        <tr>
+          <td colspan="7" style="padding: 48px 24px; text-align: center; white-space: normal;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+              <div style="font-size:28px;">⏳</div>
+              <p style="color:#e0e0e0;font-weight:600;margin:0;font-size:14px;">
+                First results publishing soon
+              </p>
+              <p style="color:#a3a3a3;font-size:12px;max-width:280px;margin:0;line-height:1.6;text-align:center;">
+                Agents are being crawled and scored. The leaderboard 
+                populates once the first benchmark runs complete.
+              </p>
+              <button onclick="openModal()" 
+                 style="margin-top:4px;font-size:11px;color:#3ecf8e;background:transparent;
+                        border:1px solid rgba(62, 207, 142, 0.3);border-radius:4px;
+                        padding:6px 14px;text-decoration:none;letter-spacing:1px;cursor:pointer;">
+                + SUBMIT YOUR AGENT
+              </button>
+            </div>
+          </td>
+        </tr>
+        `;
+
+        const emptyDirectoryHTML = `
+        <div style="grid-column:1/-1;padding:64px 24px;text-align:center;background:#141414;border:1px dashed #262626;border-radius:12px;">
+          <p style="font-size:32px;margin:0 0 12px;">🔍</p>
+          <p style="color:#e0e0e0;font-weight:600;font-size:14px;margin:0 0 8px;">
+            No named agents indexed yet
+          </p>
+          <p style="color:#a3a3a3;font-size:12px;max-width:300px;
+                     margin:0 auto 20px;line-height:1.7;">
+            Our crawlers are still discovering agents across the web.
+            Register yours to be among the first verified listings.
+          </p>
+          <button onclick="openModal()"
+             style="font-size:11px;color:#3ecf8e;letter-spacing:1px;background:transparent;cursor:pointer;
+                    border:1px solid rgba(62, 207, 142, 0.3);border-radius:4px;
+                    padding:8px 16px;text-decoration:none;">
+            + REGISTER & BENCHMARK
+          </button>
+        </div>
+        `;
+
+        const API_URL = 'https://agentic-yellow-pages.onrender.com/agents';
+        let allAgents = [];
+
+        const grid = document.getElementById('agentGrid');
+        const loading = document.getElementById('loadingState');
+        const error = document.getElementById('errorState');
+        const searchInput = document.getElementById('searchInput');
+        const tagFilter = document.getElementById('tagFilter');
+
+        // Dynamic schema structure
+        const schemaData = {
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "Agentic Yellow Pages",
+            "url": "https://www.agenticyellowpage.com/",
+            "description": "The machine-readable directory of AI agents another agent can call, each tested over MCP every day.",
+            "mainEntity": {
+                "@type": "ItemList",
+                "itemListElement": []
+            }
+        };
+
+        async function fetchAgents() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const data = await response.json();
+                
+                // Handle different array structures gracefully
+                const agentsList = data.agents ? data.agents : (Array.isArray(data) ? data : []);
+                
+                allAgents = agentsList;
+                
+                updateLiveCounters();
+                populateTagFilter();
+                renderLeaderboard();
+                renderAgents(allAgents);
+                updateJSONLD();
+
+            } catch (err) {
+                console.error(err);
+                loading.classList.add('hidden');
+                error.classList.remove('hidden');
+                error.classList.add('flex');
+                document.getElementById('errorMessage').innerText = "Unable to connect to the database. " + err.message;
+            }
+        }
+
+        async function updateLiveCounters() {
+            try {
+                const s = await (await fetch(API_URL.replace(/\/agents$/, '/stats'))).json();
+                document.getElementById('totalAgentsCounter').innerText = (s.agents_with_endpoint ?? allAgents.length).toLocaleString('en');
+                document.getElementById('auditedTodayCounter').innerText = (s.open_and_working ?? 0).toLocaleString('en');
+                return;
+            } catch (e) { /* fall back to the loaded page */ }
+            document.getElementById('totalAgentsCounter').innerText = allAgents.length;
+            
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const auditedToday = allAgents.filter(a => {
+                if (!a.last_tested_at) return false;
+                return new Date(a.last_tested_at) > today;
+            }).length;
+            
+            document.getElementById('auditedTodayCounter').innerText = auditedToday;
+        }
+
+        function populateTagFilter() {
+            const uniqueTags = new Set();
+            allAgents.forEach(a => {
+                if(Array.isArray(a.tags)) {
+                    a.tags.forEach(t => uniqueTags.add(t.toLowerCase()));
+                }
+            });
+            
+            const sortedTags = Array.from(uniqueTags).sort();
+            tagFilter.innerHTML = '<option value="all">All Tags</option>';
+            sortedTags.forEach(tag => {
+                if(!tag.startsWith('pay:')) {
+                    const opt = document.createElement('option');
+                    opt.value = tag;
+                    opt.textContent = tag;
+                    tagFilter.appendChild(opt);
+                }
+            });
+        }
+
+        function updateJSONLD() {
+            const validForSchema = allAgents.filter(a => !shouldSkip(a));
+            schemaData.mainEntity.itemListElement = validForSchema.slice(0,20).map((a, i) => ({
+                "@type": "ListItem",
+                "position": i + 1,
+                "item": {
+                    "@type": "SoftwareApplication",
+                    "name": a.name || 'Unknown Agent',
+                    "url": `https://${a.domain}`,
+                    "applicationCategory": "DeveloperApplication"
+                }
+            }));
+            document.getElementById('schema-jsonld').textContent = JSON.stringify(schemaData);
+        }
+
+        function renderLeaderboard() {
+            const tbody = document.getElementById('leaderboardBody');
+            
+            // Filter agents that pass shouldSkip and have an actual score > 0
+            const validAgents = allAgents.filter(a => !shouldSkip(a) && a.trust_score > 0);
+
+            validAgents.sort((a, b) => b.trust_score - a.trust_score);
+            const top10 = validAgents.slice(0, 10);
+
+            if (top10.length === 0) {
+                tbody.innerHTML = emptyLeaderboardHTML;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            top10.forEach((agent, index) => {
+                const probe = agent.raw_card?.probe || {};
+                const sec = agent.response_time_ms ? `${agent.response_time_ms} ms` : '-';
+                const int = Array.isArray(probe.tools) ? probe.tools.length : '-';
+                const perf = probe.protocol_version || '-';
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-[#1a1a1a] transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-mono text-sb-muted">#${index + 1}</td>
+                    <td class="px-6 py-4 font-bold text-white">${agent.name}</td>
+                    <td class="px-6 py-4 font-mono text-xs text-sb-green"><a href="https://${agent.domain}" target="_blank" class="hover:underline">${agent.domain}</a></td>
+                    <td class="px-6 py-4 text-sb-muted font-mono text-xs">${sec}</td>
+                    <td class="px-6 py-4 text-sb-muted font-mono text-xs">${int}</td>
+                    <td class="px-6 py-4 text-sb-muted font-mono text-xs">${perf}</td>
+                    <td class="px-6 py-4 text-right font-mono font-bold text-cyan-400">${agent.trust_score}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getScoreColorClass(score) {
+            if (score >= 71) return { text: 'text-emerald-400', border: 'border-emerald-500/50', bg: 'bg-emerald-900/20', icon: 'ph-shield-check' };
+            if (score >= 41) return { text: 'text-amber-400', border: 'border-amber-500/50', bg: 'bg-amber-900/20', icon: 'ph-warning' };
+            return { text: 'text-red-400', border: 'border-red-500/50', bg: 'bg-red-900/20', icon: 'ph-warning-octagon' };
+        }
+
+        function renderAgents(agentsToRender) {
+            loading.classList.add('hidden');
+            error.classList.add('hidden');
+            error.classList.remove('flex');
+            
+            const visibleAgents = agentsToRender.filter(a => !shouldSkip(a));
+
+            if (visibleAgents.length === 0) {
+                grid.classList.remove('hidden');
+                grid.innerHTML = emptyDirectoryHTML;
+                return;
+            }
+
+            // --- SORTING V2: 3-Tier Status, then Trust Score ---
+            visibleAgents.sort((a, b) => {
+                const getStatusWeight = (status) => {
+                    if (status === 'a2a_verified') return 3;
+                    if (status === 'alive' || status === 'online') return 2;
+                    return 1; // offline
+                };
+                
+                const weightA = getStatusWeight(a.status);
+                const weightB = getStatusWeight(b.status);
+                
+                // 1. Sort by Status (a2a_verified > alive > offline)
+                if (weightA !== weightB) return weightB - weightA;
+                
+                // 2. If same status, sort by Trust Score
+                return (b.trust_score || 0) - (a.trust_score || 0);
+            });
+
+            grid.classList.remove('hidden');
+            grid.innerHTML = '';
+
+            visibleAgents.forEach(agent => {
+                const tags = Array.isArray(agent.tags) ? agent.tags : [];
+                const isZeroScore = agent.trust_score === 0;
+
+                // TYPE BADGE (Data Nodes & Scraped Nodes are skipped entirely via shouldSkip filter)
+                let typeBadge = '';
+                if (isZeroScore) {
+                    typeBadge = `<div class="bg-sb-border/30 border border-sb-border text-sb-muted text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md mb-3 w-max flex items-center gap-1.5"><i class="ph-fill ph-warning-circle"></i> Unverified Node</div>`;
+                } else {
+                    typeBadge = `<div class="bg-emerald-900/20 border border-emerald-800/50 text-emerald-400 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md mb-3 w-max flex items-center gap-1.5"><i class="ph-fill ph-lightning"></i> Active Agent</div>`;
+                }
+
+                // TIER BADGE / AUDIT BUTTON
+                let tierBadge = '';
+                if (isZeroScore) {
+                    tierBadge = `<button onclick="openClaimModal('${agent.domain}')" class="flex items-center gap-1.5 border border-sb-border bg-[#111] hover:border-sb-green hover:bg-sb-green/10 hover:text-sb-green text-sb-muted text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md transition-all mb-3 w-max cursor-pointer z-20 relative"><i class="ph-fill ph-hand-pointing"></i> Claim & Audit</button>`;
+                } else {
+                    if (agent.trust_score !== undefined && agent.trust_score !== null) {
+                        const style = getScoreColorClass(agent.trust_score);
+                        tierBadge = `<div class="flex items-center gap-1.5 border ${style.border} ${style.bg} ${style.text} text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md mb-3 w-max font-mono shadow-sm"><i class="ph-fill ${style.icon}"></i> Score: ${agent.trust_score}</div>`;
+                    } else if (tags.includes('auth-required')) {
+                        tierBadge = `<div class="flex items-center gap-1.5 border border-sb-border bg-[#111] text-sb-muted text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md mb-3 w-max"><i class="ph-fill ph-lock-simple"></i> Auth required</div>`;
+                    } else {
+                        tierBadge = `<div class="flex items-center gap-1.5 border border-sb-border bg-[#111] text-sb-muted text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md mb-3 w-max"><i class="ph-fill ph-hourglass-high"></i> Pending Audit</div>`;
+                    }
+                }
+
+                // Sub-scores
+                let subScoresHtml = '';
+                if(agent.trust_score > 0 && agent.audit_log && agent.audit_log.final_scores) {
+                    const sec = agent.audit_log.final_scores.security_median ?? '-';
+                    const int = agent.audit_log.final_scores.intelligence_median ?? '-';
+                    const perf = agent.audit_log.final_scores.performance_score ?? '-';
+                    
+                    subScoresHtml = `
+                    <div class="flex gap-2 mb-4 font-mono">
+                        <span class="text-[9px] bg-[#1a1a1a] border border-sb-border px-1.5 py-0.5 rounded text-sb-muted" title="Security Score">SEC: ${sec}</span>
+                        <span class="text-[9px] bg-[#1a1a1a] border border-sb-border px-1.5 py-0.5 rounded text-sb-muted" title="Intelligence Score">INT: ${int}</span>
+                        <span class="text-[9px] bg-[#1a1a1a] border border-sb-border px-1.5 py-0.5 rounded text-sb-muted" title="Performance Score">PRF: ${perf}</span>
+                    </div>`;
+                }
+
+                // Tags Formatting
+                const tagsHTML = tags.slice(0, 4).map(tag => {
+                    if (tag.toLowerCase().startsWith('pay:')) return ''; // Hide legacy pay tags
+                    return `<span class="inline-block bg-[#111] border border-sb-border text-sb-muted text-[10px] uppercase font-mono tracking-wider px-2 py-1 rounded-md">${tag}</span>`;
+                }).join('');
+
+                // NEW: V2.0 3-Tier Status formatting
+                const status = agent.status || 'alive'; // fallback for legacy data
+                let statusColor, statusDot, statusText;
+                
+                if (status === 'a2a_verified') {
+                    statusColor = 'text-sb-green border-sb-green/30 bg-sb-green/10';
+                    statusDot = 'bg-sb-green animate-pulse';
+                    statusText = 'A2A Verified';
+                } else if (status === 'alive' || status === 'online') {
+                    statusColor = 'text-amber-400 border-amber-400/30 bg-amber-400/10';
+                    statusDot = 'bg-amber-400 animate-pulse';
+                    statusText = 'Alive';
+                } else {
+                    statusColor = 'text-red-400 border-red-400/30 bg-red-400/10';
+                    statusDot = 'bg-red-400';
+                    statusText = 'Offline';
+                }
+
+                // Add the Live Ping if available
+                const pingHtml = agent.response_time_ms 
+                    ? `<span class="text-[9px] text-sb-muted font-mono ml-2 border-l border-sb-border pl-2"><i class="ph-fill ph-lightning"></i> ${agent.response_time_ms}ms</span>` 
+                    : '';
+
+                const cardBorder = 'border-sb-border';
+
+                const card = document.createElement('div');
+                card.className = `bg-sb-surface border ${cardBorder} rounded-xl p-6 hover:border-sb-muted transition-all duration-300 group flex flex-col h-full relative mt-2 md:mt-4`;
+                
+                card.innerHTML = `
+                    <div class="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl pointer-events-none"></div>
+                    
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-lg bg-[#111] border border-sb-border flex items-center justify-center text-sb-muted group-hover:text-white transition-colors">
+                                <i class="ph ph-cpu text-2xl"></i>
+                            </div>
+                            <div class="flex items-center gap-1.5 border px-2 py-1 rounded-full text-[9px] uppercase font-bold tracking-wider ${statusColor}">
+                                <span class="h-1.5 w-1.5 rounded-full ${statusDot}"></span>
+                                ${statusText}
+                                ${pingHtml}
+                            </div>
+                        </div>
+                        <a href="https://${agent.domain}" target="_blank" class="text-sb-muted hover:text-white transition-colors p-1" title="Visit Endpoint">
+                            <i class="ph ph-arrow-up-right text-lg"></i>
+                        </a>
+                    </div>
+                    
+                    <div class="relative z-10 flex-grow">
+                        <div class="flex flex-wrap gap-2">
+                            ${typeBadge}
+                            ${tierBadge}
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1 truncate" title="${agent.name}">${agent.name}</h3>
+                        <a href="https://${agent.domain}" target="_blank" class="text-xs font-mono text-sb-muted hover:text-white transition-colors mb-2 block truncate">
+                            ${agent.domain}
+                        </a>
+                        ${subScoresHtml}
+                        <p class="text-sm text-sb-muted line-clamp-3 mb-4 leading-relaxed">
+                            ${agent.description || "An automated machine node discovered on the network."}
+                        </p>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 mt-auto relative z-10 pt-4 border-t border-sb-border">
+                        ${tagsHTML || '<span class="text-xs text-sb-muted italic">No tags</span>'}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Search & Filter Logic
+        function filterGrid() {
+            const term = searchInput.value.toLowerCase();
+            const tag = tagFilter.value.toLowerCase();
+            
+            const filtered = allAgents.filter(agent => {
+                const matchesSearch = (agent.name || '').toLowerCase().includes(term) || 
+                                      (agent.domain || '').toLowerCase().includes(term) || 
+                                      (Array.isArray(agent.tags) && agent.tags.some(t => t.toLowerCase().includes(term)));
+                
+                const matchesTag = tag === 'all' || (Array.isArray(agent.tags) && agent.tags.some(t => t.toLowerCase() === tag));
+                
+                return matchesSearch && matchesTag;
+            });
+            renderAgents(filtered);
+        }
+
+        searchInput.addEventListener('input', filterGrid);
+        tagFilter.addEventListener('change', filterGrid);
+
+        // --- Modals Logic ---
+        function openModal() {
+            document.getElementById('registerModal').classList.remove('hidden');
+            document.getElementById('formStatus').classList.add('hidden');
+            document.getElementById('registerForm').reset();
+        }
+        function closeModal() { document.getElementById('registerModal').classList.add('hidden'); }
+
+        // Claim & Audit Modal Logic
+        function openClaimModal(domain) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const displayDomain = domain || urlParams.get('domain') || 'this endpoint';
+            
+            document.getElementById('claimDomainTarget').innerText = displayDomain;
+            document.getElementById('claimStep1').classList.remove('hidden');
+            document.getElementById('claimStep2').classList.add('hidden');
+            document.getElementById('claimModal').classList.remove('hidden');
+        }
+        function closeClaimModal() {
+            document.getElementById('claimModal').classList.add('hidden');
+        }
+        function submitClaimRequest() {
+            // Transition UI to Progress Tracker
+            document.getElementById('claimStep1').classList.add('hidden');
+            document.getElementById('claimStep2').classList.remove('hidden');
+        }
+
+        // Copy to clipboard helper
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert("Wallet address copied to clipboard!");
+        }
+
+        // Standard Registration Submit
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const status = document.getElementById('formStatus');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner-gap animate-spin"></i> Verifying...';
+            btn.disabled = true;
+            status.classList.add('hidden');
+
+            const family = document.getElementById('regFamily').value;
+            let tags = document.getElementById('regTags').value.split(',').map(t => t.trim()).filter(Boolean);
+            if(family !== "Unknown") tags.push(`core:${family.toLowerCase()}`);
+
+            const payload = {
+                domain: document.getElementById('regDomain').value,
+                name: document.getElementById('regName').value,
+                description: document.getElementById('regDesc').value,
+                tags: tags,
+                raw_card: {}
+            };
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Verification failed');
+                
+                status.className = 'text-sm py-2 px-3 rounded-md bg-green-900/50 text-green-400 border border-green-800';
+                status.innerText = '✅ Registered successfully! Estimated audit time: 1-2 days.';
+                status.classList.remove('hidden');
+                fetchAgents();
+                setTimeout(closeModal, 3000);
+            } catch (err) {
+                status.className = 'text-sm py-2 px-3 rounded-md bg-red-900/50 text-red-400 border border-red-800';
+                status.innerText = `❌ ${err.message}`;
+                status.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // Close modals on outside click
+        window.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('registerModal')) closeModal();
+            if (e.target === document.getElementById('claimModal')) closeClaimModal();
+        });
+        
+        // Auto-open claim modal if parameters are present
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('domain') && urlParams.has('claim')) {
+                openClaimModal(urlParams.get('domain'));
+            }
+        });
+
+        // Initializer
+        fetchAgents();
+        // Setup live counter interval (refresh logic every 30s)
+        setInterval(fetchAgents, 30000);
+    </script>
+</body>
+</html>
