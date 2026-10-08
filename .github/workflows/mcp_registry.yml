@@ -1,0 +1,29 @@
+﻿name: MCP Registry Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 5 * * *'   # daily
+  push:
+    branches: [main]
+    paths:
+      - 'mcp_registry.py'
+      - 'ingest_mcp.py'
+      - '.github/workflows/mcp_registry.yml'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install requests python-dotenv
+      - name: Fetch the registry, probe each server over MCP, upsert
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python ingest_mcp.py
