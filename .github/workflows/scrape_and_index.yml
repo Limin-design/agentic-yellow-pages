@@ -1,10 +1,8 @@
 name: Scrape and Index to Azure Search  
   
 on:  
-  workflow_dispatch:  
-  schedule:  
-    # Runs every 30 minutes (UTC)  
-    - cron: "*/30 * * * *"  
+  # Manual only: the 30-minute schedule was failing on every run (August 2026).
+  workflow_dispatch:
   
 jobs:  
   scrape-and-index:  

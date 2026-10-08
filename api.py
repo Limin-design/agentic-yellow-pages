@@ -209,8 +209,35 @@ def register_agent(agent: AgentSubmission):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save to database: {str(e)}")
 
+_PLACEHOLDER = {"", "na", "n/a", "none", "null", "unknown"}
+
+
+def _is_placeholder(value) -> bool:
+    return str(value or "").strip().lower() in _PLACEHOLDER
+
+
+def _declared_endpoint(raw_card) -> str | None:
+    """Same rule as benchmark.declared_endpoint: only an endpoint the card itself declares is testable."""
+    if not isinstance(raw_card, dict):
+        return None
+    if isinstance(raw_card.get("url"), str) and raw_card["url"].startswith("http"):
+        return raw_card["url"]
+    servers = raw_card.get("servers")
+    if isinstance(servers, list) and servers and isinstance(servers[0], dict):
+        url = servers[0].get("url")
+        if isinstance(url, str) and url.startswith("http"):
+            return url
+    return None
+
+
 @app.get("/agents")
-def list_agents(tag: str = None, limit: int = 1000):
+def list_agents(tag: str = None, limit: int = 1000, include_unnamed: bool = False):
+    """Directory entries, newest first.
+
+    Entries the crawler could not name or describe ("NA") are hidden unless include_unnamed=true.
+    Each entry carries `testable`: whether its card declares an endpoint the benchmark can call.
+    Entries without one are listed but never scored, so a trust_score of 0 from older runs on such
+    an entry is returned as null."""
     if not SUPABASE_URL or not SUPABASE_KEY: raise HTTPException(status_code=500, detail="Database missing.")
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
     api_url = f"{SUPABASE_URL}/rest/v1/agents?select=*&order=id.desc"
@@ -219,6 +246,14 @@ def list_agents(tag: str = None, limit: int = 1000):
     try:
         response = requests.get(api_url, headers=headers)
         response.raise_for_status()
-        return {"status": "success", "count": len(response.json()), "agents": response.json()}
+        agents = []
+        for agent in response.json():
+            if not include_unnamed and _is_placeholder(agent.get("name")) and _is_placeholder(agent.get("description")):
+                continue
+            agent["testable"] = _declared_endpoint(agent.get("raw_card")) is not None
+            if not agent["testable"]:
+                agent["trust_score"] = None
+            agents.append(agent)
+        return {"status": "success", "count": len(agents), "agents": agents}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

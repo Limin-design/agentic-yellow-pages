@@ -133,21 +133,27 @@ def detect_agent_family(tags: list[str], description: str) -> str:
     return "Unknown"   # Unknown → no recusals (all judges eligible)
 
 
-def resolve_endpoint(agent: dict[str, Any], default_domain: str) -> str:
+def declared_endpoint(agent: dict[str, Any]) -> str | None:
+    """The endpoint the agent itself declares in its card (A2A `url` or OpenAPI-style `servers`).
+
+    None when the card declares nothing. Until October 2026 the benchmark then guessed
+    `https://<domain>/api/chat`; most directory entries are documentation sites (llms.txt) with no
+    such route, so every one of them was probed, got an HTML 404 and was stored with a trust score
+    of 0. An entry without a declared endpoint is now listed but not scored."""
     raw_card = agent.get("raw_card") or {}
     if not isinstance(raw_card, dict):
-        raw_card = {}
+        return None
 
-    if isinstance(raw_card.get("url"), str):
+    if isinstance(raw_card.get("url"), str) and raw_card["url"].startswith("http"):
         return raw_card["url"]
 
     servers = raw_card.get("servers")
-    if isinstance(servers, list) and servers:
+    if isinstance(servers, list) and servers and isinstance(servers[0], dict):
         url = servers[0].get("url")
-        if url:
+        if isinstance(url, str) and url.startswith("http"):
             return url
 
-    return f"https://{default_domain}/api/chat"
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -650,9 +656,13 @@ def run_enterprise_benchmark() -> None:
             log.info("⏭️   SKIP  %-40s  (data node / unclaimed scrape)", domain)
             continue
 
+        target_url = declared_endpoint(agent)
+        if not target_url:
+            log.info("⏭️   SKIP  %-40s  (no declared endpoint: listed, not scored)", domain)
+            continue
+
         target_family = detect_agent_family(tags, desc)
         probe         = generate_probe(tags)
-        target_url    = resolve_endpoint(agent, domain)
 
         log.info("[ AUDITING  %-40s | CORE: %-10s ]", domain, target_family)
         log.info("  → Endpoint: %s", target_url)
