@@ -230,21 +230,50 @@ def _declared_endpoint(raw_card) -> str | None:
     return None
 
 
+def _count(filters: str) -> int | None:
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Prefer": "count=exact",
+               "Range": "0-0"}
+    res = requests.get(f"{SUPABASE_URL}/rest/v1/agents?select=id{filters}", headers=headers, timeout=30)
+    total = res.headers.get("Content-Range", "").split("/")[-1]
+    return int(total) if total.isdigit() else None
+
+
+@app.get("/stats")
+def stats():
+    """Exact counts (the listing is capped at 1000 rows per request)."""
+    if not SUPABASE_URL or not SUPABASE_KEY: raise HTTPException(status_code=500, detail="Database missing.")
+    return {
+        "agents_with_endpoint": _count("&raw_card->>url=like.http*"),
+        "mcp_servers": _count("&tags=cs.%7Bmcp-server%7D"),
+        "open_and_working": _count("&tags=cs.%7Bopen%7D"),
+        "auth_required": _count("&tags=cs.%7Bauth-required%7D"),
+        "scored_above_0": _count("&trust_score=gt.0"),
+        "sites_without_endpoint": _count("&or=(raw_card->>url.is.null,raw_card->>url.not.like.http*)"),
+    }
+
+
 @app.get("/agents")
-def list_agents(tag: str = None, limit: int = 1000, include_unnamed: bool = False):
+def list_agents(tag: str = None, limit: int = 1000, include_unnamed: bool = False, include_sites: bool = False):
     """Directory entries, newest first.
 
-    Entries the crawler could not name or describe ("NA") are hidden unless include_unnamed=true.
-    Each entry carries `testable`: whether its card declares an endpoint the benchmark can call.
-    Entries without one are listed but never scored, so a trust_score of 0 from older runs on such
-    an entry is returned as null."""
+    By default only real agents: entries whose card declares an endpoint another agent can call (today,
+    remote MCP servers from the official registry, probed over MCP by ingest_mcp.py). The agent-friendly
+    sites the first crawler found through their llms.txt have no such endpoint; they are returned only
+    with include_sites=true, marked testable=false and without a score. Entries the crawler could not
+    name ("NA") also need include_unnamed=true."""
     if not SUPABASE_URL or not SUPABASE_KEY: raise HTTPException(status_code=500, detail="Database missing.")
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-    api_url = f"{SUPABASE_URL}/rest/v1/agents?select=*&order=id.desc"
+    # best first: the protocol score of the probed agents, then the newest
+    api_url = f"{SUPABASE_URL}/rest/v1/agents?select=*&order=trust_score.desc.nullslast,last_tested_at.desc.nullslast"
     if tag: api_url += f"&tags=cs.%7B{tag}%7D"
+    plain_url = api_url + f"&limit={limit}"
+    if not tag and not include_sites:
+        api_url += "&raw_card->>url=like.http*"
     api_url += f"&limit={limit}"
     try:
         response = requests.get(api_url, headers=headers)
+        if response.status_code == 400 and api_url != plain_url:
+            response = requests.get(plain_url, headers=headers)   # filtered below instead
         response.raise_for_status()
         agents = []
         for agent in response.json():
@@ -252,6 +281,8 @@ def list_agents(tag: str = None, limit: int = 1000, include_unnamed: bool = Fals
                 continue
             agent["testable"] = _declared_endpoint(agent.get("raw_card")) is not None
             if not agent["testable"]:
+                if not include_sites:
+                    continue
                 agent["trust_score"] = None
             agents.append(agent)
         return {"status": "success", "count": len(agents), "agents": agents}
